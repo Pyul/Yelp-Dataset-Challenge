@@ -1,63 +1,63 @@
-import json, codecs
+import json, sklearn, pickle, random
+import numpy as np
+import pandas as pd
+from collections import Counter
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import linear_kernel
 
-# bizf = open('/Users/sigberto/Documents/yelpCSProject/yelp_academic_dataset_business.json')
-# popBizs = {}
-# popBiz = None
-# for line in bizf:
-#     biz = json.loads(line)
-#     if biz["review_count"] > 50 and "Food" in biz["categories"] or "Restaurant" in biz["categories"]:
-#         popBiz = biz
-#         break
-# bizf.close()
+random.seed(42)
+
+def getCosineSimilarityMatrix(reviewTextArray):
+    X = TfidfVectorizer().fit_transform(reviewTextArray)
+    return linear_kernel(X, X)
+
+def getDivergentBizs(user):
+    pastReviews = user['reviews']
+    combinedText = ""
+    for review in pastReviews:
+        combinedText += "\n\n\n\"" + review['text']
+    
+
+
+
+
+
+users = pickle.load(open('user_list'))
+bizs = pickle.load(open('business_list'))
+reviews = pickle.load(open('review_list'))
+# bizIdToReview = pickle.load('biz_id_to_review')
+# bizIdToText = pickle.load('biz_id_to_review_text')
+
+# hist = np.histogram(reviews, bins=[1,10,30,50,100,300,800])
+#NLTK - NLP library
+bizIds = []
+for review in reviews:
+    bizIds.append(review['business_id'])
+
+bizIdToReviewText = dict.fromkeys(bizIds, "")
+for review in reviews:
+    bizIdToReviewText[review["business_id"]] += "\n\n\n" + review['text'].strip()
+
+bizIds = np.array(bizIdToReviewText.keys())
+# combinedTexts = np.array(bizIdToReviewText.values())
+combinedTexts = []
+for bizId in bizIds:
+    combinedTexts.append(bizIdToReviewText[bizId])
+data = np.mat([np.transpose(bizIds), np.transpose(combinedTexts)])
+
+#data[0, :] is the array of all biz id's
+#data[1, :] is the array of all the reviews
+
+cosSim = getCosineSimilarityMatrix(combinedTexts)
+print max([(cosSim, index) for index, cosSim in enumerate(cosSim[0][1:])])
+# nZeros = 0
+# for i in xrange(len(cos_sim)):
+#     for j in xrange(len(cos_sim[0])):
+#         if cos_sim[i, j] == 0:
+#             nZeros += 1
 #
-# print popBiz
+# print cos_sim
+# print 1.0*nZeros/(len(cos_sim)*len(cos_sim[0]))
 
-# Output all reviews from our prolific user
-# outputf = open('sampleReviews', 'w')
-# reviewsf = open('/Users/sigberto/Documents/yelpCSProject/yelp_academic_dataset_review.json')
-#
-# userIds = set()
-# reviews = []
-# # bizIds = popBizs.keys()
-# for line in reviewsf:
-#     review = json.loads(line)
-#     # reviews.append(review)
-#     if review["user_id"] == 'nEYPahVwXGD2Pjvgkm7QqQ':
-#         outputf.write(review['text'].lower().encode("UTF-8"))
-#         # userIds.add(review["user_id"])
-# reviewsf.close()
-# outputf.close()
-
-#Output all reviews about our favorite place
-outputf = open('bizReviews', 'w')
-reviewsf = open('/Users/sigberto/Documents/yelpCSProject/yelp_academic_dataset_review.json')
-
-for line in reviewsf:
-    review = json.loads(line)
-    # reviews.append(review)
-    if review["business_id"] == 'McikHxxEqZ2X0joaRNKlaw':
-        outputf.write(review['text'].lower().encode("UTF-8"))
-        # userIds.add(review["user_id"])
-reviewsf.close()
-outputf.close()
-
-# userToCount = {}
-# for review in reviews:
-#     if review['user_id'] == 'nEYPahVwXGD2Pjvgkm7QqQ':
-#         print review
-    # userId = review['user_id']
-    # if userId in userIds:
-    #     if userId in userToCount.keys():
-    #         userToCount[userId] = userToCount[userId] + 1
-    #     else:
-    #         userToCount[userId] = 0
-
-# activeUsers = set()
-# for key in userToCount.keys():
-#     if userToCount[key]>10:
-#         activeUsers.add(key)
-#
-# print activeUsers
-
-
-#set([u'nEYPahVwXGD2Pjvgkm7QqQ', u'bSkco4ZdB7REFtDsJUVrDA', u't5mr9snU8tI7hcjMSCYxLQ', u'IbvOxKSps_K5wa3a2_jc-Q', u'9cCTmiJ7hz35rHIdr8n9kA', u'scIDar9VGDMcTOHbem37pg', u'FyCBkNXwoI_6X6apbslg4g', u'i0aToSFRKd6PjF3dMY8JLQ', u'u7rJ_CFbp4IYeT39fNfVDQ', u'VSfPN4tGH4Tjd3JUu8yUew', u'wtQsINapBJLhtfIe2xecpw', u'2rSeth60_CuWN3ZJ4k41lg', u'MSuyK2p8G9hEqyWf5IgnYQ', u'fwsJGulnozT2U6FefsLiFw', u'ytgLwKzD6B4af5vW56RpJg', u'Yvn7DHj7o7sSCH2rNH74Mw', u'kRa-sZPizt2EqWYVFZ6DGw', u'2VqU7uoDeiE8OUL14Ce5Ig', u'G7KQF0U0p25nf07dObPeVg', u'WMTm9HHRA3EewoxTX1Gleg', u'B5WkNWDxZ-baWoQc6DBNHA', u'8fApIAMHn2MZJFUiCQto5Q', u'DLu1Bum8EXNE62xno-v0VA', u'SlKJNLm1SQdgaaKtqD--1w', u'bvu13GyOUwhEjPum2xjiqQ', u'fFoRIzbwpMiv3BvfdtdlXQ', u'LhgQq1x4n9ardg1PFo8vgg', u'jaDTgMqh4DzoLJrMrW3JcA', u'sS2sSWqZMnQMRoWx-Mdzgg', u'op2Gve4sAMQ4qEzq2Tad0g', u'N_cH3QA_eXXmnzz-nzEeKA', u'QmykNasFdjyaQ3K8oME3fQ', u'W9ZG5q-QIblXYeHgaPS5Uw', u'9Ify25DK87s5_u2EhK0_Rg', u'p3MF38R3Htt3ZWyPJMTFgQ', u'5UCdxI_krbnv7_7Q3Ur_eQ', u'_e5drmTJBSV0yiFBrTimtg', u'JPPhyFE-UE453zA6K0TVgw'])
+queryUser = random.choice(users)
+pastBizsBySimilarity = getDivergentBizs(bizIds, queryUser)
