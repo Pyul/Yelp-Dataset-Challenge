@@ -180,32 +180,27 @@ vectorizedReviewTexts = TfidfVectorizer().fit_transform(reviewCorpus)
 # print cos_sim
 # print 1.0*nZeros/(len(cos_sim)*len(cos_sim[0]))
 
-k = 20
-trainUsers = random.sample(users, k)
-testUsers =  random.sample(users, k)
-
-wCollabFiltering = learnCollabFiltering
-evalScore = evalCollabFiltering()
+queryUser = random.choice(users)
+rec = Recommender(users, bizs, reviews)
+recommendations = rec.recommend([queryUser])
 
 
-recommendations = Recommendations.recommend(queryUsers)
+bizIdToBiz = {}
+for biz in bizs:
+    bizIdToBiz[biz['business_id']] = biz
 
-# bizIdToBiz = {}
-# for biz in bizs:
-#     bizIdToBiz[biz['business_id']] = biz
-#
-# queryUser = random.choice(users)
-# userForEval, removedBizs = makeEvalUser(queryUser, vectorizedReviewTexts, reviewIdToIndex, bizIdToBiz, 10)
-# neighborIndexesBySim = nearestNeighbors(userForEval, users, vectorizedReviewTexts, reviewIdToIndex)
-#
-# for neighbor in neighborIndexesBySim:
-#     print neighbor
-#
-# nearestNeighbor = users[neighborIndexesBySim[0][1]]
-#
-# neighborBizs = findUserBizs(nearestNeighbor, bizIdToBiz)
-# divRecommendations = divergentBizs(userForEval, neighborBizs, vectorizedReviewTexts, reviewIdToIndex, 10)
-#
-# evalScore = evaluateRecommendations(userForEval, divRecommendations, removedBizs, bizs, vectorizedReviewTexts, reviewIdToIndex)
-#
-# print evalScore
+queryUser = random.choice(users)
+userForEval, removedBizs = makeEvalUser(queryUser, vectorizedReviewTexts, reviewIdToIndex, bizIdToBiz, 10)
+neighborIndexesBySim = nearestNeighbors(userForEval, users, vectorizedReviewTexts, reviewIdToIndex)
+
+for neighbor in neighborIndexesBySim:
+    print neighbor
+
+nearestNeighbor = users[neighborIndexesBySim[0][1]]
+
+neighborBizs = findUserBizs(nearestNeighbor, bizIdToBiz)
+divRecommendations = divergentBizs(userForEval, neighborBizs, vectorizedReviewTexts, reviewIdToIndex, 10)
+
+evalScore = evaluateRecommendations(userForEval, divRecommendations, removedBizs, bizs, vectorizedReviewTexts, reviewIdToIndex)
+
+print evalScore
