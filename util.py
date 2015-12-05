@@ -14,6 +14,7 @@ class User:
         self.extractedAverageStars = None
         self.votes = userJson['votes']
         self.reviews = []
+        self.vectorizedText = None
 
     def addReview(self, review):
         self.reviews.append(review)
@@ -61,6 +62,14 @@ class User:
     def getVotes(self):
         return self.votes
 
+    def combineVectorizedReviews(self):
+        if self.reviews:
+            self.vectorizedText = np.zeros(len(self.reviews[0].getVectorizedText()))
+            for review in self.reviews:
+                if review.vectorizedText != None:
+                    self.vectorizedText += review.getVectorizedText()
+
+
     def __str__(self):
         return 'id: {} name: {} averageStars: {} reviewCount: {} votes: {} reviews: {}'.format(self.id, self.name,
             self.extractedAverageStars, self.getExtractedReviewCount(), self.votes, self.reviews)
@@ -82,6 +91,7 @@ class Biz:
         self.categories = set(bizJson['categories'])
         self.open = bizJson['open']
         self.reviews = []
+        self.vectorizedText = None
 
     def setId(self, Id):
         self.id = Id
@@ -144,6 +154,13 @@ class Biz:
         self.reviews.append(review)
         review.biz = self
 
+    def combineVectorizedReviews(self):
+        if self.reviews:
+            self.vectorizedText = np.zeros(len(self.reviews[0].getVectorizedText()))
+            for review in self.reviews:
+                if review.vectorizedText != None:
+                    self.vectorizedText += review.getVectorizedText()
+
     def __str__(self):
         return 'id: {}\nname: {}\nneighborhoods: {}\ncity: {}\n'.format(self.id, self.name, self.neighborhoods, self.city) + \
                ' state: {}\nlat: {}\nlon: {}stars: {}\n'.format(self.state, self.lat, self.lon, self.extractedAverageStars) + \
@@ -162,6 +179,13 @@ class Review:
         self.votes = reviewJson['votes']
         self.user = None
         self.biz = None
+        self.vectorizedText = None
+
+    def getVectorizedText(self):
+        return self.vectorizedText
+
+    def setVectorizedText(self, vectorizedText):
+        self.vectorizedText = vectorizedText
 
     def getBizId(self):
         return self.bizId
