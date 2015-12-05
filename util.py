@@ -1,7 +1,8 @@
-import json, collections, numpy as np
-from nltk.corpus import stopwords
-from sklearn.feature_extraction.text import TfidfVectorizer
-import pickle
+#import json, collections, numpy as np
+import json, collections
+#from nltk.corpus import stopwords
+#from sklearn.feature_extraction.text import TfidfVectorizer
+#import pickle
 
 class User:
 
@@ -51,7 +52,7 @@ class Review:
 
 
 
-
+'''
 
 def getUsers(directory, minReviews = 100, maxUsers = -1):
     userRead = open(directory)
@@ -93,9 +94,11 @@ def getReviews(directory, maxReviews = -1):
         if n == maxReviews:
             break
     bizIdToText = {}
-    for bizId in bizIdToReviews.keys():
+    #for bizId in bizIdToReviews.keys():
 
     return reviews, bizIdToReviews
+
+'''
 
 # def extractTextFeatures(bizIdToRewiews):
 #     wordCounter = collections.Counter()
