@@ -1,4 +1,4 @@
-import json, sklearn, pickle, random, copy, collabf, csp
+import json, sklearn, pickle, random, copy, collabf, CSP, util
 import numpy as np
 import pandas as pd
 from collections import Counter
@@ -18,12 +18,34 @@ class Recommender:
         self.finalK = k
         self.initialK = 10*k
 
+        reviewIdToIndex = {}
+        reviewIds = []
+        reviewCorpus = []
+        for i in xrange(len(reviews)):
+            reviewIds.append(reviews[i].getId())
+            reviewIdToIndex[reviews[i].getId()] = i
+            reviewCorpus.append(reviews[i].getText())
+
+        # combinedTexts = np.array(bizIdToReviewText.values())
+        data = np.mat([np.transpose(reviewIds), np.transpose(reviewCorpus)])
+
+        #data[0, :] is the array of all biz id's
+        #data[1, :] is the array of all the reviews
+
+        vectorizedReviewTexts = TfidfVectorizer().fit_transform(reviewCorpus)
+        for i in xrange(len(reviews)):
+            reviews[i].setVectorizedText(vectorizedReviewTexts[i])
+        for user in self.users:
+            user.combineVectorizedReviews()
+        for biz in bizs:
+            biz.combineVectorizedReviews()
+
     def recommend(self, queryUsers, constraints=None):
         recommendations = {}
         for user in queryUsers:
             recs = self.topKRecommendations(user)
             if user in constraints and constraints[user] != None:
-                recs = csp.reduceBizs(recs, constraints[user])
+                recs = CSP.reduceBizs(recs, constraints[user])
             recommendations[user.id] = recs
         return recommendations
 
@@ -33,8 +55,6 @@ class Recommender:
         # narrows down to finalK recommendations
         collabFilteringList = collabf.similarityFilter(user, collabFilteringList, self)
         return collabFilteringList
-
-
 
 # def getCosineSimilarityMatrix(reviewTextArray):
 #     X = TfidfVectorizer().fit_transform(reviewTextArray)
@@ -153,6 +173,9 @@ reviews = pickle.load(open('review_list'))
 
 # hist = np.histogram(reviews, bins=[1,10,30,50,100,300,800])
 #NLTK - NLP library
+
+rec = Recommender(users, bizs, reviews)
+
 reviewIdToIndex = {}
 reviewIds = []
 reviewCorpus = []
@@ -193,6 +216,14 @@ queryUser = random.choice(users)
 userForEval, removedBizs = makeEvalUser(queryUser, vectorizedReviewTexts, reviewIdToIndex, bizIdToBiz, 10)
 neighborIndexesBySim = nearestNeighbors(userForEval, users, vectorizedReviewTexts, reviewIdToIndex)
 
+bizIdToBiz = {}
+for biz in bizs:
+    bizIdToBiz[biz['business_id']] = biz
+
+queryUser = random.choice(users)
+userForEval, removedBizs = makeEvalUser(queryUser, vectorizedReviewTexts, reviewIdToIndex, bizIdToBiz, 10)
+neighborIndexesBySim = nearestNeighbors(userForEval, users, vectorizedReviewTexts, reviewIdToIndex)
+
 for neighbor in neighborIndexesBySim:
     print neighbor
 
@@ -204,3 +235,4 @@ divRecommendations = divergentBizs(userForEval, neighborBizs, vectorizedReviewTe
 evalScore = evaluateRecommendations(userForEval, divRecommendations, removedBizs, bizs, vectorizedReviewTexts, reviewIdToIndex)
 
 print evalScore
+
