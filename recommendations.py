@@ -35,6 +35,7 @@ class Recommender:
         return collabFilteringList
 
 
+
 # def getCosineSimilarityMatrix(reviewTextArray):
 #     X = TfidfVectorizer().fit_transform(reviewTextArray)
 #     return linear_kernel(X, X)
