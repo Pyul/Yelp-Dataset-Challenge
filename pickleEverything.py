@@ -1,4 +1,5 @@
 import pickle, json
+from util import User, Biz, Review
 
 userRead = open('../yelp_academic_dataset_user.json')
 minUserReviews = 100
@@ -6,6 +7,7 @@ minBizReviews = 10
 maxUsers = 100
 maxBizs = 10
 maxReviews = 10
+maxReviewsPerBiz = 50
 city = 'Pittsburgh'
 
 
@@ -14,18 +16,18 @@ bizs = []
 bizIdToBiz = {}
 n = 0
 for line in bizRead:
-    biz = json.loads(line)
-    if 'Restaurants' in biz['categories'] and biz['review_count'] >= minBizReviews and (city == None or city == biz['city']):
-        biz['reviews'] = []
+    jsonBiz = json.loads(line)
+    if 'Restaurants' in jsonBiz['categories'] and jsonBiz['review_count'] >= minBizReviews and (city == None or city == jsonBiz['city']):
+        biz = Biz(jsonBiz)
         bizs.append(biz)
-        bizIdToBiz[biz['business_id']] = biz
+        bizIdToBiz[biz.id] = biz
         n += 1
     if n >= maxBizs:
         break
 bizRead.close()
 
 
-#get all the reviews for the businesses
+#get all the reviews for the extracted businesses
 reviewsRead = open('../yelp_academic_dataset_review.json')
 reviews = []
 # bizIdToReviews = dict.fromkeys(all, "")
@@ -34,15 +36,15 @@ bizIds = bizIdToBiz.keys()
 bizToReviewCount = dict.fromkeys(bizIds, 0)
 reviewIds = set()
 for line in reviewsRead:
-    review = json.loads(line)
-    if review['business_id'] in bizIds:
-        if bizIdToBiz[review['business_id']]['review_count'] > minBizReviews:
-            if bizToReviewCount[review['business_id']] <= 10:
-                review["text"] = review["text"].lower()
-                reviews.append(review)
-                userIdsWithReviews.add(review['user_id'])
-                reviewIds.add(review['user_id'] + review['business_id'])
-                bizToReviewCount[review['business_id']] += 1
+    jsonReview = json.loads(line)
+    if jsonReview['business_id'] in bizIds:
+        if bizToReviewCount[jsonReview['business_id']] <= maxReviewsPerBiz:
+            jsonReview["text"] = jsonReview["text"].lower()
+            review = Review(jsonReview)
+            reviews.append(review)
+            userIdsWithReviews.add(review.userId)
+            reviewIds.add(review.id)
+            bizToReviewCount[review.bizId] += 1
 reviewsRead.close()
 
 #get all the users that wrote reviews for the businesses above
@@ -50,39 +52,39 @@ users = []
 userIdToUser = {}
 n = 0
 for line in userRead:
-    user = json.loads(line)
-    if user['review_count'] >= minUserReviews and user['user_id'] in userIdsWithReviews:
-        user['reviews'] = []
+    jsonUser = json.loads(line)
+    if jsonUser['review_count'] >= minUserReviews and jsonUser['user_id'] in userIdsWithReviews:
+        user = User(jsonUser)
         users.append(user)
-        userIdToUser[user['user_id']] = user
+        userIdToUser[user.id] = user
         n += 1
-    if n >= maxUsers:
-        break
+        if n >= maxUsers:
+            break
 
 # get all the other reviews for the users in our set that are NOT for the restaurants we have
 userIds = userIdToUser.keys()
 reviewsRead = open('../yelp_academic_dataset_review.json')
 for line in reviewsRead:
-    review = json.loads(line)
-    if review['user_id'] in userIds and (review['user_id'] + review['business_id']) not in reviewIds:
-        review["text"] = review["text"].lower()
+    jsonReview = json.loads(line)
+    if jsonReview['user_id'] in userIds and (jsonReview['user_id'] + jsonReview['business_id']) not in reviewIds:
+        jsonReview["text"] = jsonReview["text"].lower()
+        review = Review(jsonReview)
         reviews.append(review)
 reviewsRead.close()
 
 #make all the reviews for businesses and users accessible to each
 for review in reviews:
-    review['review_id'] = review['user_id'] + review['business_id']
-    if review['business_id'] in bizIds:
-        biz = bizIdToBiz[review['business_id']]
-        biz['reviews'].append(review)
-    if review['user_id'] in userIds:
-        user = userIdToUser[review['user_id']]
-        user['reviews'].append(review)
+    if review.bizId in bizIds:
+        biz = bizIdToBiz[review.bizId]
+        biz.addReview(review)
+    if review.userId in userIds:
+        user = userIdToUser[review.userId]
+        user.addReview(review)
 
-#filter for users with a minimum number of reviews in our list of reviews (different from their review_count field)
+#filter for users with a minimum number of reviews in our list of reviews (different from their reviewCount field)
 usersWithManyReviews = []
 for user in users:
-    if len(user['reviews']) > 50:
+    if len(user.reviews) > minUserReviews/2:
         usersWithManyReviews.append(user)
 # bizIdToText = {}
 # for bizId in bizIdToReviews.keys():

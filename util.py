@@ -3,13 +3,15 @@ from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
 import pickle
 
+
 class User:
 
     def __init__(self, userJson):
         self.id = userJson['user_id']
         self.name = userJson['name']
-        self.reviewCount = userJson['review_count']
-        self.averageStars = userJson['average_stars']
+        self.yelpReviewCount = userJson['review_count']
+        self.yelpAverageStars = userJson['average_stars']
+        self.extractedAverageStars = None
         self.votes = userJson['votes']
         self.reviews = []
 
@@ -17,31 +19,143 @@ class User:
         self.reviews.append(review)
         review.user = self
 
+    def getId(self):
+        return self.id
+
+    def setId(self, Id):
+        self.id = Id
+
+    def setName(self, name):
+        self.name = name
+
+    def getName(self):
+        return self.name
+
+    def getYelpReviewCount(self):
+        return self.yelpReviewCount
+
+    def getExtractedReviewCount(self):
+        return len(self.reviews)
+
+    def getYelpAverageStars(self):
+        return self.yelpAverageStars
+
+    def getReviews(self):
+        return self.reviews
+
+    def findAverageStars(self):
+        if self.extractedAverageStars is not None:
+            return self.extractedAverageStars
+        else:
+            reviews = self.getReviews()
+            if reviews:
+                totalStars = 0
+                for review in reviews:
+                    totalStars += review.stars
+                averageStars = 1.0*totalStars/len(reviews)
+                self.extractedAverageStars = averageStars
+                return averageStars
+            else:
+                return None
+
+    def getVotes(self):
+        return self.votes
+
+    def __str__(self):
+        return 'id: {} name: {} averageStars: {} reviewCount: {} votes: {} reviews: {}'.format(self.id, self.name,
+            self.extractedAverageStars, self.getExtractedReviewCount(), self.votes, self.reviews)
+
+
 class Biz:
 
     def __init__(self, bizJson):
         self.id = bizJson['business_id']
         self.name = bizJson['name']
-        self.neighborhoods = bizJson['neighborhoods']
+        self.neighborhoods = set(bizJson['neighborhoods'])
         self.city = bizJson['city']
         self.state = bizJson['state']
         self.lat = bizJson['latitude']
         self.lon = bizJson['longitude']
-        self.stars = bizJson['stars']
-        self.reviewCount = bizJson['review_count']
-        self.categories = bizJson['categories']
+        self.yelpStars = bizJson['stars']
+        self.extractedAverageStars = None
+        self.yelpReviewCount = bizJson['review_count']
+        self.categories = set(bizJson['categories'])
         self.open = bizJson['open']
         self.reviews = []
+
+    def setId(self, Id):
+        self.id = Id
+
+    def getId(self):
+        return self.id
+
+    def setName(self, name):
+        self.name = name
+
+    def getName(self):
+        return self.name
+
+    def getNeighborhoods(self):
+        return self.neighborhoods
+
+    def getCity(self):
+        return self.city
+
+    def getState(self):
+        return self.state
+
+    def getLat(self):
+        return self.lat
+
+    def getLon(self):
+        return self.lon
+
+    def getYelpStars(self):
+        return self.yelpStars
+
+    def getCategories(self):
+        return self.categories
+
+    def getOpen(self):
+        return self.open
+
+    def getReviews(self):
+        return self.reviews
+
+    def getExtractedReviewCount(self):
+        return len(self.reviews)
+
+    def findAverageStars(self):
+        if self.extractedAverageStars is not None:
+            return self.extractedAverageStars
+        else:
+            reviews = self.getReviews()
+            if reviews:
+                totalStars = 0
+                for review in reviews:
+                    totalStars += review.stars
+                averageStars = 1.0*totalStars/len(reviews)
+                self.extractedAverageStars = averageStars
+                return averageStars
+            else:
+                return None
 
     def addReview(self, review):
         self.reviews.append(review)
         review.biz = self
+
+    def __str__(self):
+        return 'id: {}\nname: {}\nneighborhoods: {}\ncity: {}\n'.format(self.id, self.name, self.neighborhoods, self.city) + \
+               ' state: {}\nlat: {}\nlon: {}stars: {}\n'.format(self.state, self.lat, self.lon, self.extractedAverageStars) + \
+            'reviewCount: {}\ncategories: {}\nopen: {}\nreviews: {}'.format(self.getExtractedReviewCount(), self.categories, self.open, self.reviews)
+
 
 class Review:
 
     def __init__(self, reviewJson):
         self.bizId = reviewJson['business_id']
         self.userId = reviewJson['user_id']
+        self.id = self.userId + self.bizId
         self.stars = reviewJson['stars']
         self.text = reviewJson['text']
         self.date = reviewJson['date']
@@ -49,7 +163,36 @@ class Review:
         self.user = None
         self.biz = None
 
+    def getBizId(self):
+        return self.bizId
 
+    def getUserId(self):
+        return self.userId
+
+    def getStars(self):
+        return self.stars
+
+    def getText(self):
+        return self.text
+
+    def setText(self, text):
+        self.text = text
+
+    def getId(self):
+        return self.id
+
+    def getDate(self):
+        return self.date
+
+    def getUser(self):
+        return self.user
+
+    def getBiz(self):
+        return self.biz
+
+    def __str__(self):
+        return 'bizId: {}\nuserId: {}\nstars: {}\ndate'.format(self.bizId, self.userId, self.stars, self.date) + \
+            'votes: {}\ntext: {}, user: {}\nbiz: {}'.format(self.votes, self.text, self.user, self.biz)
 
 
 
@@ -93,7 +236,7 @@ def getReviews(directory, maxReviews = -1):
         if n == maxReviews:
             break
     bizIdToText = {}
-    for bizId in bizIdToReviews.keys():
+    # for bizId in bizIdToReviews.keys():
 
     return reviews, bizIdToReviews
 
