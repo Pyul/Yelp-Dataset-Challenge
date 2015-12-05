@@ -3,6 +3,56 @@ from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
 import pickle
 
+class User:
+
+    def __init__(self, userJson):
+        self.id = userJson['user_id']
+        self.name = userJson['name']
+        self.reviewCount = userJson['review_count']
+        self.averageStars = userJson['average_stars']
+        self.votes = userJson['votes']
+        self.reviews = []
+
+    def addReview(self, review):
+        self.reviews.append(review)
+        review.user = self
+
+class Biz:
+
+    def __init__(self, bizJson):
+        self.id = bizJson['business_id']
+        self.name = bizJson['name']
+        self.neighborhoods = bizJson['neighborhoods']
+        self.city = bizJson['city']
+        self.state = bizJson['state']
+        self.lat = bizJson['latitude']
+        self.lon = bizJson['longitude']
+        self.stars = bizJson['stars']
+        self.reviewCount = bizJson['review_count']
+        self.categories = bizJson['categories']
+        self.open = bizJson['open']
+        self.reviews = []
+
+    def addReview(self, review):
+        self.reviews.append(review)
+        review.biz = self
+
+class Review:
+
+    def __init__(self, reviewJson):
+        self.bizId = reviewJson['business_id']
+        self.userId = reviewJson['user_id']
+        self.stars = reviewJson['stars']
+        self.text = reviewJson['text']
+        self.date = reviewJson['date']
+        self.votes = reviewJson['votes']
+        self.user = None
+        self.biz = None
+
+
+
+
+
 def getUsers(directory, minReviews = 100, maxUsers = -1):
     userRead = open(directory)
     users = []
