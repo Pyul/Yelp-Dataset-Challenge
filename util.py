@@ -1,7 +1,7 @@
-import json, collections, numpy as np
-from nltk.corpus import stopwords
-from sklearn.feature_extraction.text import TfidfVectorizer
-import pickle
+#import json, collections, numpy as np
+#from nltk.corpus import stopwords
+#from sklearn.feature_extraction.text import TfidfVectorizer
+#import pickle
 
 
 class User:
