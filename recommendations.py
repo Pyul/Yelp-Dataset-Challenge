@@ -1,4 +1,4 @@
-import json, sklearn, pickle, random, copy, collabf, CSP, util
+import json, sklearn, pickle, random, copy, collabf, csp, util
 import numpy as np
 import pandas as pd
 from collections import Counter
@@ -8,53 +8,6 @@ from scipy.sparse import csr_matrix
 
 random.seed(42)
 
-
-class Recommender:
-
-    def __init__(self, users, bizs, reviews, k = 10):
-        self.users = users
-        self.bizs = bizs
-        self.reviews = reviews
-        self.finalK = k
-        self.initialK = 10*k
-
-        reviewIdToIndex = {}
-        reviewIds = []
-        reviewCorpus = []
-        for i in xrange(len(reviews)):
-            reviewIds.append(reviews[i].getId())
-            reviewIdToIndex[reviews[i].getId()] = i
-            reviewCorpus.append(reviews[i].getText())
-
-        # combinedTexts = np.array(bizIdToReviewText.values())
-        data = np.mat([np.transpose(reviewIds), np.transpose(reviewCorpus)])
-
-        #data[0, :] is the array of all biz id's
-        #data[1, :] is the array of all the reviews
-
-        vectorizedReviewTexts = TfidfVectorizer().fit_transform(reviewCorpus)
-        for i in xrange(len(reviews)):
-            reviews[i].setVectorizedText(vectorizedReviewTexts[i])
-        for user in self.users:
-            user.combineVectorizedReviews()
-        for biz in bizs:
-            biz.combineVectorizedReviews()
-
-    def recommend(self, queryUsers, constraints=None):
-        recommendations = {}
-        for user in queryUsers:
-            recs = self.topKRecommendations(user)
-            if user in constraints and constraints[user] != None:
-                recs = CSP.reduceBizs(recs, constraints[user])
-            recommendations[user.id] = recs
-        return recommendations
-
-    def topKRecommendations(self, user):
-        # returns initialK recommendations (list of (score, Biz) tuples)
-        collabFilteringList = collabf.userUserFilter(user, self)
-        # narrows down to finalK recommendations
-        collabFilteringList = collabf.similarityFilter(user, collabFilteringList, self)
-        return collabFilteringList
 
 # def getCosineSimilarityMatrix(reviewTextArray):
 #     X = TfidfVectorizer().fit_transform(reviewTextArray)
@@ -164,33 +117,27 @@ def findSimilarity(x, y, vectorizedReviewTexts, reviewIdToIndex):
     return cosine_similarity(xCombinedVectors, yCombinedVectors)
 
 
-users = pickle.load(open('user_list')) #list of python objects that are dictionaries. They have the same fields as the yelp json objects
-# i added a field called "reviews" that returns a list of review objects that are associated with a business or user
-bizs = pickle.load(open('business_list'))
-reviews = pickle.load(open('review_list'))
 # bizIdToReview = pickle.load('biz_id_to_review')
 # bizIdToText = pickle.load('biz_id_to_review_text')
 
 # hist = np.histogram(reviews, bins=[1,10,30,50,100,300,800])
 #NLTK - NLP library
 
-rec = Recommender(users, bizs, reviews)
-
-reviewIdToIndex = {}
-reviewIds = []
-reviewCorpus = []
-for i in xrange(len(reviews)):
-    reviewIds.append(reviews[i]['review_id'])
-    reviewIdToIndex[reviews[i]['review_id']] = i
-    reviewCorpus.append(reviews[i]['text'])
-
-# combinedTexts = np.array(bizIdToReviewText.values())
-data = np.mat([np.transpose(reviewIds), np.transpose(reviewCorpus)])
-
-#data[0, :] is the array of all biz id's
-#data[1, :] is the array of all the reviews
-
-vectorizedReviewTexts = TfidfVectorizer().fit_transform(reviewCorpus)
+# reviewIdToIndex = {}
+# reviewIds = []
+# reviewCorpus = []
+# for i in xrange(len(reviews)):
+#     reviewIds.append(reviews[i]['review_id'])
+#     reviewIdToIndex[reviews[i]['review_id']] = i
+#     reviewCorpus.append(reviews[i]['text'])
+#
+# # combinedTexts = np.array(bizIdToReviewText.values())
+# data = np.mat([np.transpose(reviewIds), np.transpose(reviewCorpus)])
+#
+# #data[0, :] is the array of all biz id's
+# #data[1, :] is the array of all the reviews
+#
+# vectorizedReviewTexts = TfidfVectorizer().fit_transform(reviewCorpus)
 # cosSim = linear_kernel(vectorizedReviewTexts, vectorizedReviewTexts)
 # print cosSim
 # print max([(cosSim, index) for index, cosSim in enumerate(cosSim[0][1:])])
@@ -203,8 +150,12 @@ vectorizedReviewTexts = TfidfVectorizer().fit_transform(reviewCorpus)
 # print cos_sim
 # print 1.0*nZeros/(len(cos_sim)*len(cos_sim[0]))
 
+rec = pickle.load(open('pickledRecommender'))
+
+users = rec.getUsers()
+bizs = rec.getBizs()
+reviews = rec.getReviews()
 queryUser = random.choice(users)
-rec = Recommender(users, bizs, reviews)
 recommendations = rec.recommend([queryUser])
 
 
