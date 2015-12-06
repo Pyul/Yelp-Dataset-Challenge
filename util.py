@@ -259,6 +259,7 @@ class Recommender:
         self.reviews = reviews
         self.finalK = k
         self.initialK = 10*k
+        self.simTheta = None
 
     def getUsers(self):
         return self.users
@@ -268,6 +269,11 @@ class Recommender:
 
     def getReviews(self):
         return self.reviews
+
+    def train(self):
+        review0 = self.reviews[0]
+        self.simTheta = csr_matrix(np.zeros(review0.getVectorizedText().shape))
+
 
     def recommend(self, queryUsers, constraints=None):
         recommendations = {}
