@@ -259,6 +259,7 @@ class Recommender:
         self.reviews = reviews
         self.finalK = k
         self.initialK = 10*k
+        self.simTheta = None
 
     def getUsers(self):
         return self.users
@@ -268,6 +269,11 @@ class Recommender:
 
     def getReviews(self):
         return self.reviews
+
+    def train(self):
+        review0 = self.reviews[0]
+        self.simTheta = csr_matrix(np.zeros(review0.getVectorizedText().shape))
+
 
     def recommend(self, queryUsers, constraints=None):
         recommendations = {}
@@ -285,16 +291,38 @@ class Recommender:
         # collabFilteringList = collabf.similarityFilter(user, collabFilteringList, self)
         return collabFilteringList
 
+    # returns list of tuples (predicted rating of user for a biz, that biz)
     def userUserFilter(self, user):
         #similarUsers is list of tuples of (user-user similarity score, user)
         similarUsers = self.rankedSimilarUsers(user)
-        #candidateBizs is list uf tuples of (user-user sim* user'stars, biz)
+        #candidateBizs is list uf tuples of (user-user sim* user's stars, biz)
         candidateBizs = self.findCandidateBizs(user, similarUsers)
-        rankedRecommendations = self.recommendFromCandidates(user, candidateBizs)
+        rankedRecommendations = self.recommendFromCandidates(user, candidateBizs, similarUsers)
+        return rankedRecommendations
 
-    def recommendFromCandidates(self, user, candidateBizs):
-        pass
+    # performs prediction of the queryUser's stars for some candidate bizs. Current formula from
+    # page 13 of http://files.grouplens.org/papers/FnT%20CF%20Recsys%20Survey.pdf
+    def recommendFromCandidates(self, user, candidateBizs, similarUsers):
+        recommendations = []
+        userAvgStars = user.findAverageStars()
+        for _, biz in candidateBizs:
+            simSum = 0
+            p_ui = 0
+            nOthersWithReview = 0
+            for simScore, other in similarUsers:
+                reviewOther = other.bizIdToReview[biz.id]
+                if reviewOther is not None:
+                    p_ui += simScore*(reviewOther.getStars() - other.findAverageStars())
+                    simSum += simScore
+                    nOthersWithReview += 1
+            if nOthersWithReview >= 3:
+                p_ui /= simSum
+                p_ui += userAvgStars
+                recommendations.append((p_ui, biz))
+        recommendations.sort(reverse=True)
+        return recommendations
 
+     # returns list of tuples of (user-user similarity score, user)
     def rankedSimilarUsers(self, user):
         similarUsers = []
         for other in self.users:
@@ -306,6 +334,8 @@ class Recommender:
         limit = min(self.NSIMILAR_USERS, len(similarUsers))
         return similarUsers[:limit]
 
+    # scans similar user's rated businesses and assembles a list of candidates
+    # returns list of tuples (similarity score * stars that a similar reviewer gave for a biz, that biz)
     def findCandidateBizs(self, user, similarUsers):
         userBizIds = user.getReviewedBizIds()
         candidateBizIds = set()
