@@ -3,7 +3,7 @@ import numpy as np
 
 def heatplot(data,labelx,labely):
     fig, ax = plt.subplots()
-    heatmap = ax.pcolor(data, cmap=plt.cm.Blues)
+    heatmap = ax.pcolor(data, cmap=plt.cm.Blues, vmin=0, vmax = 0.8)
 
     # put the major ticks at the middle of each cell
     ax.set_xticks(np.arange(data.shape[0])+0.5, minor=False)
@@ -24,7 +24,6 @@ def heatplot(data,labelx,labely):
     plt.xticks(rotation=90)
     plt.show()
 
-
 # def heatplot(X,labels):
 #     fig1=plt.figure(figsize=(4,8))
 #     plt.imshow(X[:,:])
@@ -41,5 +40,6 @@ def heatplot(data,labelx,labely):
 #     plt.show()
 #
 # data = np.random.rand(4,4)
-# labels = list('ABCD')
-# heatplot(data,labels)
+# data = np.array([[1,2],[5,6]])
+# labels = list('AB')
+# heatplot(data,labels,labels)

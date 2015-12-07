@@ -106,7 +106,7 @@ for i in xrange(len(reviews)):
     reviewIds.append(reviews[i].getId())
     reviewIdToIndex[reviews[i].getId()] = i
     reviewCorpus.append(reviews[i].getText())
-    reviews[i].setText(None)
+    #reviews[i].setText(None)
 
 # combinedTexts = np.array(bizIdToReviewText.values())
 data = np.mat([np.transpose(reviewIds), np.transpose(reviewCorpus)])
@@ -127,12 +127,11 @@ for review in reviews:
         user = userIdToUser[review.userId]
         user.addReview(review)
 
-
 #filter for users with a minimum number of reviews in our list of reviews (different from their reviewCount field)
-# usersWithManyReviews = []
-# for user in users:
+usersWithManyReviews = []
+for user in users:
 #     if len(user.reviews) >= 20:
-#         usersWithManyReviews.append(user)
+    usersWithManyReviews.append(user)
 
 for user in users:
     user.combineVectorizedReviews()
@@ -143,10 +142,10 @@ recommender = Recommender(users, bizs, reviews)
 print len(users)
 print len(bizs)
 print len(reviews)
-pickle.dump(recommender, open('pickledRecommender', 'wb'))
+#pickle.dump(recommender, open('pickledRecommender', 'wb'))
 
 # pickle.dump(bizs, open('business_list', 'wb'))
-# pickle.dump(usersWithManyReviews, open('user_list', 'wb'))
+pickle.dump(usersWithManyReviews, open('user_list', 'wb'))
 # pickle.dump(reviews, open('review_list', 'wb'))
 # pickle.dump(bizIdToReviews, open('biz_id_to_review', 'wb'))
 # pickle.dump(bizIdToText, open('biz_id_to_review_text', 'wb'))

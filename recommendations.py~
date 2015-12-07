@@ -1,4 +1,4 @@
-import json, sklearn, pickle, random, copy, collabf, csp, util
+import json, sklearn, pickle, random, copy, collabf, csp, util, regressor
 import numpy as np
 import pandas as pd
 from collections import Counter
@@ -160,70 +160,65 @@ reviews = rec.getReviews()
 queryUser = random.choice(users)
 # recommendations = rec.recommend([queryUser])
 
+numusers = 20
+numrestaurants = 20
+
 # Make a heat plot of restaurant-restaurant similarities
 lenbiz = bizs[0].vectorizedText.shape[1]
-numusers = 40
 allbizsvectorizedText = np.zeros((numusers,lenbiz))
 for i in xrange(numusers):
     vector = bizs[i].vectorizedText.toarray()
     allbizsvectorizedText[i,:]=vector
 
 reslabels = []
-for i in range(40):
+for i in range(numrestaurants):
     if len(bizs[i].categories)>=2:
         bizs[i].categories.remove('Restaurants')
         reslabel = random.sample(bizs[i].categories, 1)[0]
         reslabel.encode('ascii','ignore')
     else:
         reslabel = 'Restaurants'
-    labels.append(reslabel)
+    reslabels.append(reslabel)
 
-similaritymatrix = np.zeros((40,40))
-for i in range(40):
-    for j in range(40):
+similaritymatrix = np.zeros((numrestaurants,numrestaurants))
+for i in range(numrestaurants):
+    for j in range(numrestaurants):
         if i==j:
             similaritymatrix[i,j] = 1
         else:
             similaritymatrix[i,j] = cosine_similarity(allbizsvectorizedText[i,:],allbizsvectorizedText[j,:])
-print similaritymatrix
 heatplot.heatplot(similaritymatrix,reslabels,reslabels)
 
 # Make a heat plot of user-user similarities
 len = users[0].vectorizedText.shape[1]
-numusers = 40
 allusersvectorizedText = np.zeros((numusers,len))
 for i in xrange(numusers):
     vector = users[i].vectorizedText.toarray()
     allusersvectorizedText[i,:]=vector
 
 userlabels = []
-for i in range(40):
+for i in range(numusers):
     userlabels.append('user'+str(i))
 
-similaritymatrix = np.zeros((40,40))
-for i in range(40):
-    for j in range(40):
+similaritymatrix = np.zeros((numusers,numusers))
+for i in range(numusers):
+    for j in range(numusers):
         if i==j:
             similaritymatrix[i,j] = 1
         else:
             similaritymatrix[i,j] = cosine_similarity(allusersvectorizedText[i,:],allusersvectorizedText[j,:])
-print similaritymatrix
 heatplot.heatplot(similaritymatrix,userlabels,userlabels)
 
 # Make a heat plot of user-restaurant similarities
-labels = []
-for i in range(40):
-    labels.append('user'+str(i))
-
-similaritymatrix = np.zeros((40,40))
-for i in range(40):
-    for j in range(40):
-        if i==j:
-            similaritymatrix[i,j] = 1
-        else:
-            similaritymatrix[i,j] = cosine_similarity(allusersvectorizedText[i,:],allusersvectorizedText[j,:])
-print similaritymatrix
-heatplot.heatplot(similaritymatrix,label1,label2)
+similaritymatrix = np.zeros((numusers,numrestaurants))
+for i in range(numusers):
+    for j in range(numrestaurants):
+        print 'user i text shape = ', allusersvectorizedText[i,:].shape
+        similaritymatrix[i,j] = cosine_similarity(allbizsvectorizedText[i,:],allusersvectorizedText[j,:])
+heatplot.heatplot(similaritymatrix,reslabels,userlabels)
+# print 'double check'
+# print similaritymatrix[35,:]
+# print similaritymatrix[36,:]
 
 # Make a PCA plot
 # pca.plotpca(allusersvectorizedText)
