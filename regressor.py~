@@ -52,6 +52,8 @@ def train(X,Y,n_estimators=20,model='Random Forest',kernel='linear'):
     print(" -- Finished training.")
 
     print("  Calculate CV score")
+    print y_pred.shape
+    print y_valid.shape
     score = sqrt(sum((y_pred-y_valid)**2)/len(y_pred))
     return regr, score
 
