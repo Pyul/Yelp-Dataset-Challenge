@@ -1,8 +1,10 @@
-import pickle, json, collections, operator
+import pickle, json, collections, operator, sys
 from util import User, Biz, Review, Recommender
 import numpy as np
+import scipy.sparse as sp
 from sklearn.feature_extraction.text import TfidfVectorizer
 
+# sys.setrecursionlimit(1500)
 
 userRead = open('../yelp_academic_dataset_user.json')
 minUserReviews = 100
@@ -102,10 +104,12 @@ for jsonReview in jsonReviews:
 reviewIdToIndex = {}
 reviewIds = []
 reviewCorpus = []
+reviewStars = []
 for i in xrange(len(reviews)):
     reviewIds.append(reviews[i].getId())
     reviewIdToIndex[reviews[i].getId()] = i
     reviewCorpus.append(reviews[i].getText())
+    reviewStars.append(reviews[i].getStars())
     reviews[i].setText(None)
 
 # combinedTexts = np.array(bizIdToReviewText.values())
@@ -139,7 +143,16 @@ for user in users:
 for biz in bizs:
     biz.combineVectorizedReviews()
 
-recommender = Recommender(users, bizs, reviews)
+vectorizedUIPairs = []
+reviewStars = []
+for user in users:
+    for biz in user.getReviewedBizs():
+        vectorizedUIPair = sp.hstack((user.getVectorizedText(), biz.getVectorizedText()), format='csr')
+        review = user.getReviewFromBizId(biz.getId())
+        vectorizedUIPairs.append(vectorizedUIPair)
+        reviewStars.append(review.getStars())
+
+recommender = Recommender(users, bizs, reviews, vectorizedUIPairs, reviewStars)
 print len(users)
 print len(bizs)
 print len(reviews)

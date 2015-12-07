@@ -78,7 +78,7 @@ class User:
         self.reviewedBizs.append(review.biz)
         self.bizIdToReview[review.bizId] = review
 
-    def reviewFromBizId(self, Id):
+    def getReviewFromBizId(self, Id):
         if Id in self.reviewedBizIds:
             return self.bizIdToReview[Id]
         else:
@@ -255,12 +255,14 @@ class Recommender:
     KFOLDS = 5
     MIN_USER_USER_COS_SIM = 0.7
 
-    def __init__(self, users, bizs, reviews, k=10):
+    def __init__(self, users, bizs, reviews, vectorizedUIpairs, reviewStars, k=10):
         self.users = users
         self.bizs = bizs
         self.reviews = reviews
         self.finalK = k
         self.initialK = 10*k
+        self.vectorizedUIpairs = vectorizedUIpairs
+        self.reviewStars = reviewStars
         self.simTheta = None
         self.minSim = 0.5
 
