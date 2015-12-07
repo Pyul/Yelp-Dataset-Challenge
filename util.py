@@ -1,4 +1,4 @@
-import json, collections, numpy as np, random, csp, copy
+import json, collections, numpy as np, random, csp, copy, regressor
 from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
 import pickle
@@ -165,10 +165,14 @@ class Biz:
         self.open = bizJson['open']
         self.reviews = []
         self.vectorizedText = None
+        self.attributes = bizJson['attributes']
         self.reviewerIds = set()
 
     def setId(self, Id):
         self.id = Id
+
+    def getAttributes(self):
+        return self.attributes
 
     def getId(self):
         return self.id
@@ -255,13 +259,13 @@ class Recommender:
     KFOLDS = 5
     MIN_USER_USER_COS_SIM = 0.7
 
-    def __init__(self, users, bizs, reviews, vectorizedUIpairs, reviewStars, k=10):
+    def __init__(self, users, bizs, reviews, vectorizedUIPairs, reviewStars, k=10):
         self.users = users
         self.bizs = bizs
         self.reviews = reviews
         self.finalK = k
         self.initialK = 10*k
-        self.vectorizedUIpairs = vectorizedUIpairs
+        self.vectorizedUIPairs = vectorizedUIPairs
         self.reviewStars = reviewStars
         self.simTheta = None
         self.minSim = 0.5
@@ -314,6 +318,39 @@ class Recommender:
         else:
             return None
 
+    def regress(self):
+        np.random.seed(17411)
+        #CVscore=[]
+        #treenum=range(1,21,2)
+        #for n_estimators in treenum:
+        #    clf,encoder,score = train(n_estimators)
+        #    print("CV Score = "+str(score))
+        #    CVscore.append(score)
+        #plt.plot(treenum,CVscore)
+        #plt.show()
+
+        # load traning set
+        # first column = y
+        # second to end = x
+        Xtrain = self.vectorizedUIPairs
+        Ytrain = self.reviewStars
+
+        # start training
+        #regr,score = train(Xtrain,model='SVM')
+        regr,score = regressor.train(Xtrain, Ytrain, model='Random Forest', n_estimators=10)
+        print("CV Score = "+str(score))
+        regr,score = regressor.train(Xtrain, Ytrain, model='Linear Regression')
+        print("Linear Regression Score = "+str(score))
+        regr,score = regressor.train(Xtrain, Ytrain, model='SVM', kernel='linear')
+        print("SVM linear = "+str(score))
+        regr,score = regressor.train(Xtrain, Ytrain, model='SVM', kernel='poly')
+        print("SVM poly = "+str(score))
+        # load test set
+        # Xtest = np.random.rand(5, 3)
+
+        # make prediction
+        # y_pred = regr.predict(Xtest)
+        print(" - Finished.")
 
     def train(self):
         review0 = self.reviews[0]
