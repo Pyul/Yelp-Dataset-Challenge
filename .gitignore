@@ -39,3 +39,4 @@ Thumbs.db
 .idea/workspace.xml
 /.idea/
 *.ipynb_checkpoints
+*.pyc

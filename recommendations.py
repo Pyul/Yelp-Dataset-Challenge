@@ -1,12 +1,10 @@
-import json, sklearn, pickle, random, copy, collabf, csp, util
+import json, sklearn, pickle, random, copy, collabf, csp, util, math
 import numpy as np
 import pandas as pd
 from collections import Counter
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel, cosine_similarity
 from scipy.sparse import csr_matrix
-
-random.seed(42)
 
 
 # def getCosineSimilarityMatrix(reviewTextArray):
@@ -151,6 +149,15 @@ def findSimilarity(x, y, vectorizedReviewTexts, reviewIdToIndex):
 # print 1.0*nZeros/(len(cos_sim)*len(cos_sim[0]))
 
 rec = pickle.load(open('pickledRecommender'))
+
+minSim = 0.5
+while minSim < 1:
+    error = 0
+    rec.minSim = minSim
+    for i in xrange(10):
+        error += math.sqrt(rec.evalRecommendations())
+    print 'error: {}, minSim: {}'.format(error/5, minSim)
+    minSim += 0.05
 
 users = rec.getUsers()
 bizs = rec.getBizs()

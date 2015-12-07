@@ -1,4 +1,4 @@
-import json, collections, numpy as np, random, csp
+import json, collections, numpy as np, random, csp, copy
 from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
 import pickle
@@ -252,6 +252,8 @@ random.seed(42)
 class Recommender:
 
     NSIMILAR_USERS = 50
+    KFOLDS = 5
+    MIN_USER_USER_COS_SIM = 0.7
 
     def __init__(self, users, bizs, reviews, k=10):
         self.users = users
@@ -260,6 +262,7 @@ class Recommender:
         self.finalK = k
         self.initialK = 10*k
         self.simTheta = None
+        self.minSim = 0.5
 
     def getUsers(self):
         return self.users
@@ -269,6 +272,46 @@ class Recommender:
 
     def getReviews(self):
         return self.reviews
+
+    def evalRecommendations(self):
+        users = set(copy.deepcopy(self.users))
+        samples = []
+        nUsers = len(users)/self.KFOLDS
+        for i in xrange(self.KFOLDS-1):
+            sample = random.sample(users, nUsers)
+            samples.append(sample)
+            for item in sample:
+                users.remove(item)
+        samples.append(users)
+        sumSquaredError = 0
+        nErrorsConsidered = 0
+        for i in xrange(self.KFOLDS):
+            testUsers = samples[i]
+            trainUsers = samples[:i].extend(samples[i+1:])
+            for testUser in testUsers:
+                singleUserError = self.evalUser(testUser, trainUsers)
+                if singleUserError is not None:
+                    sumSquaredError += singleUserError
+                    nErrorsConsidered += 1
+        avgSquarredError = sumSquaredError / nErrorsConsidered
+        return avgSquarredError
+
+    def evalUser(self, userGiven, others):
+        user = copy.deepcopy(userGiven)
+        bizs = user.getReviewedBizs()
+        toPredict = random.choice(bizs)
+        bizs.remove(toPredict)
+        similarUsers = self.rankedSimilarUsers(user, others)
+        recommendations = self.recommendFromCandidates(user, [toPredict], similarUsers)
+        if recommendations:
+            p_ui = recommendations[0][0]
+            reviewForPredicted = user.bizIdToReview[toPredict.getId()]
+            r_ui = reviewForPredicted.getStars()
+            squaredError = (p_ui - r_ui)**2
+            return squaredError
+        else:
+            return None
+
 
     def train(self):
         review0 = self.reviews[0]
@@ -297,6 +340,7 @@ class Recommender:
         similarUsers = self.rankedSimilarUsers(user)
         #candidateBizs is list uf tuples of (user-user sim* user's stars, biz)
         candidateBizs = self.findCandidateBizs(user, similarUsers)
+        candidateBizs = [candidateBizs[1] for biz in candidateBizs]
         rankedRecommendations = self.recommendFromCandidates(user, candidateBizs, similarUsers)
         return rankedRecommendations
 
@@ -305,16 +349,18 @@ class Recommender:
     def recommendFromCandidates(self, user, candidateBizs, similarUsers):
         recommendations = []
         userAvgStars = user.findAverageStars()
-        for _, biz in candidateBizs:
+        for biz in candidateBizs:
             simSum = 0
             p_ui = 0
             nOthersWithReview = 0
             for simScore, other in similarUsers:
-                reviewOther = other.bizIdToReview[biz.id]
-                if reviewOther is not None:
-                    p_ui += simScore*(reviewOther.getStars() - other.findAverageStars())
-                    simSum += simScore
-                    nOthersWithReview += 1
+                otherReviewedBizIds = other.bizIdToReview.keys()
+                if biz.id in otherReviewedBizIds:
+                    reviewOther = other.bizIdToReview[biz.id]
+                    if reviewOther is not None:
+                        p_ui += simScore*(reviewOther.getStars() - other.findAverageStars())
+                        simSum += simScore
+                        nOthersWithReview += 1
             if nOthersWithReview >= 3:
                 p_ui /= simSum
                 p_ui += userAvgStars
@@ -323,13 +369,16 @@ class Recommender:
         return recommendations
 
      # returns list of tuples of (user-user similarity score, user)
-    def rankedSimilarUsers(self, user):
+    def rankedSimilarUsers(self, user, others=None):
+        if others is None:
+            others = self.users
         similarUsers = []
-        for other in self.users:
+        for other in others:
             if user is other:
                 continue
             sim = cosine_similarity(user.getVectorizedText(), other.getVectorizedText())
-            similarUsers.append((sim, other))
+            if sim > self.minSim:
+                similarUsers.append((sim, other))
         similarUsers.sort(reverse=True)
         limit = min(self.NSIMILAR_USERS, len(similarUsers))
         return similarUsers[:limit]
@@ -347,7 +396,7 @@ class Recommender:
                 # if it's not already a candidate and the query user does not know it and the other gave it a good score
                 if biz.id not in candidateBizIds and biz.id not in userBizIds and review.getStars() > other.findAverageStars():
                     candidateBizIds.add(biz.id)
-                    candidateBizs.append((simScore*review.getStars(), biz))
+                    candidateBizs.append((simScore*(review.getStars() - other.findAverageStars()), biz))
         limit = min(len(candidateBizs), self.initialK)
         return candidateBizs[:limit]
 
