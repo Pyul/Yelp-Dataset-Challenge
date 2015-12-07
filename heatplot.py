@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-def heatplot(data,labels):
+def heatplot(data,labelx,labely):
     fig, ax = plt.subplots()
     heatmap = ax.pcolor(data, cmap=plt.cm.Blues)
 
@@ -17,8 +17,8 @@ def heatplot(data,labels):
     # clbar=ax.colorbar()
     # clbar.set_label('Similarity')
 
-    ax.set_xticklabels(labels, minor=False)
-    ax.set_yticklabels(labels, minor=False)
+    ax.set_xticklabels(labelx, minor=False)
+    ax.set_yticklabels(labely, minor=False)
     # ax.invert_yaxis()
     # ax.xaxis.tick_top()
     plt.xticks(rotation=90)

@@ -1,4 +1,4 @@
-import json, sklearn, pickle, random, copy, collabf, csp, util, math
+import json, sklearn, pickle, random, copy, collabf, csp, util
 import numpy as np
 import pandas as pd
 from collections import Counter
@@ -154,16 +154,6 @@ def findSimilarity(x, y, vectorizedReviewTexts, reviewIdToIndex):
 
 ###############  Start code ###############
 rec = pickle.load(open('pickledRecommender'))
-
-minSim = 0.5
-while minSim < 1:
-    error = 0
-    rec.minSim = minSim
-    for i in xrange(10):
-        error += math.sqrt(rec.evalRecommendations())
-    print 'error: {}, minSim: {}'.format(error/5, minSim)
-    minSim += 0.05
-
 users = rec.getUsers()
 bizs = rec.getBizs()
 reviews = rec.getReviews()
@@ -221,6 +211,10 @@ print similaritymatrix
 heatplot.heatplot(similaritymatrix,userlabels,userlabels)
 
 # Make a heat plot of user-restaurant similarities
+labels = []
+for i in range(40):
+    labels.append('user'+str(i))
+
 similaritymatrix = np.zeros((40,40))
 for i in range(40):
     for j in range(40):
