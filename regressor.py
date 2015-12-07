@@ -23,10 +23,10 @@ def load_train_data(X, Y, train_size=0.8):
     X_train, X_valid, y_train, y_valid = train_test_split(
         X, Y, train_size=train_size, random_state=42)
     print(" -- Loaded data.")
-    print("Training set has {0[0]} rows and {0[1]} columns".format(X.shape))
+    # print("Training set has {0[0]} rows and {0[1]} columns".format(X.shape))
 
-    return (X_train.astype(float), X_valid.astype(float),
-            y_train.astype(str), y_valid.astype(str))
+    return (X_train, X_valid,
+            y_train, y_valid)
 
 def train(X,Y,n_estimators=20,model='Random Forest',kernel='linear'):
     # define regressor

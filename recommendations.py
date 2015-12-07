@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import json, sklearn, pickle, random, copy, collabf, csp, util, regressor
+=======
+import json, sklearn, pickle, random, copy, collabf, csp, util, math
+>>>>>>> sig
 import numpy as np
 import pandas as pd
 from collections import Counter
@@ -154,6 +158,23 @@ def findSimilarity(x, y, vectorizedReviewTexts, reviewIdToIndex):
 
 ###############  Start code ###############
 rec = pickle.load(open('pickledRecommender'))
+inArrayForm = []
+for vec in rec.vectorizedUIPairs:
+    inArrayForm.append(vec.toarray())
+rec.vectorizedUIPairs = np.vstack(inArrayForm)
+print rec.vectorizedUIPairs.shape
+rec.reviewStars = np.array(rec.reviewStars)
+rec.regress()
+
+minSim = 0.5
+while minSim < 1:
+    error = 0
+    rec.minSim = minSim
+    for i in xrange(10):
+        error += math.sqrt(rec.evalRecommendations())
+    print 'error: {}, minSim: {}'.format(error/5, minSim)
+    minSim += 0.05
+
 users = rec.getUsers()
 bizs = rec.getBizs()
 reviews = rec.getReviews()

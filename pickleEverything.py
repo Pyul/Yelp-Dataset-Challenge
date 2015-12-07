@@ -130,8 +130,8 @@ for review in reviews:
 #filter for users with a minimum number of reviews in our list of reviews (different from their reviewCount field)
 usersWithManyReviews = []
 for user in users:
-#     if len(user.reviews) >= 20:
-    usersWithManyReviews.append(user)
+     if len(user.reviews) >= 20:
+         usersWithManyReviews.append(user)
 
 for user in users:
     user.combineVectorizedReviews()
