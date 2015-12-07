@@ -1,0 +1,20 @@
+import matplotlib.pyplot as plt
+
+def heatplot(X,labels):
+    fig1=plt.figure(figsize=(4,8))
+    plt.imshow(X[:,:])
+    plt.hot()
+    clbar=plt.colorbar()
+    clbar.set_label('Normalized Feature Value')
+    plt.grid()
+    plt.xlabel('Restaurant #')
+    plt.ylabel('Restaurant #')
+    plt.title('Figure 1: Restaurant similarity')
+    ax.set_xticklabels(labels, minor=False)
+    ax.set_yticklabels(labels, minor=False)
+
+    plt.show()
+
+#import numpy as np
+#X = np.random.rand(50,50)
+#heatplot(X)

@@ -5,7 +5,11 @@ from collections import Counter
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel, cosine_similarity
 from scipy.sparse import csr_matrix
+import pca, heatplot
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
+random.seed(42)
 
 # def getCosineSimilarityMatrix(reviewTextArray):
 #     X = TfidfVectorizer().fit_transform(reviewTextArray)
@@ -148,6 +152,7 @@ def findSimilarity(x, y, vectorizedReviewTexts, reviewIdToIndex):
 # print cos_sim
 # print 1.0*nZeros/(len(cos_sim)*len(cos_sim[0]))
 
+###############  Start code ###############
 rec = pickle.load(open('pickledRecommender'))
 
 minSim = 0.5
@@ -163,34 +168,87 @@ users = rec.getUsers()
 bizs = rec.getBizs()
 reviews = rec.getReviews()
 queryUser = random.choice(users)
-recommendations = rec.recommend([queryUser])
+# recommendations = rec.recommend([queryUser])
 
+# Make a heat plot of restaurant-restaurant similarities
+lenbiz = bizs[0].vectorizedText.shape[1]
+numusers = 40
+allbizsvectorizedText = np.zeros((numusers,lenbiz))
+for i in xrange(numusers):
+    vector = bizs[i].vectorizedText.toarray()
+    allbizsvectorizedText[i,:]=vector
 
-bizIdToBiz = {}
-for biz in bizs:
-    bizIdToBiz[biz['business_id']] = biz
+labels = []
+for i in range(40):
+    if len(bizs[i].categories)>=2:
+        bizs[i].categories.remove('Restaurants')
+        label = random.sample(bizs[i].categories, 1)[0]
+        label.encode('ascii','ignore')
+    else:
+        label = 'Restaurants'
+    labels.append(label)
 
-queryUser = random.choice(users)
-userForEval, removedBizs = makeEvalUser(queryUser, vectorizedReviewTexts, reviewIdToIndex, bizIdToBiz, 10)
-neighborIndexesBySim = nearestNeighbors(userForEval, users, vectorizedReviewTexts, reviewIdToIndex)
+similaritymatrix = np.zeros((40,40))
+for i in range(40):
+    for j in range(40):
+        if i==j:
+            similaritymatrix[i,j] = 1
+        else:
+            similaritymatrix[i,j] = cosine_similarity(allbizsvectorizedText[i,:],allbizsvectorizedText[j,:])
+print similaritymatrix
+heatplot.heatplot(similaritymatrix,labels)
 
-bizIdToBiz = {}
-for biz in bizs:
-    bizIdToBiz[biz['business_id']] = biz
+# Make a heat plot of user-user similarities
+len = users[0].vectorizedText.shape[1]
+numusers = 40
+allusersvectorizedText = np.zeros((numusers,len))
+for i in xrange(numusers):
+    vector = users[i].vectorizedText.toarray()
+    allusersvectorizedText[i,:]=vector
 
-queryUser = random.choice(users)
-userForEval, removedBizs = makeEvalUser(queryUser, vectorizedReviewTexts, reviewIdToIndex, bizIdToBiz, 10)
-neighborIndexesBySim = nearestNeighbors(userForEval, users, vectorizedReviewTexts, reviewIdToIndex)
+labels = []
+for i in range(40):
+    labels.append('user')
 
-for neighbor in neighborIndexesBySim:
-    print neighbor
+similaritymatrix = np.zeros((40,40))
+for i in range(40):
+    for j in range(40):
+        if i==j:
+            similaritymatrix[i,j] = 1
+        else:
+            similaritymatrix[i,j] = cosine_similarity(allusersvectorizedText[i,:],allusersvectorizedText[j,:])
+print similaritymatrix
+heatplot.heatplot(similaritymatrix,labels)
 
-nearestNeighbor = users[neighborIndexesBySim[0][1]]
+# Make a PCA plot
+# pca.plotpca(allusersvectorizedText)
+# pca.plotpca(allbizsvectorizedText)
 
-neighborBizs = findUserBizs(nearestNeighbor, bizIdToBiz)
-divRecommendations = divergentBizs(userForEval, neighborBizs, vectorizedReviewTexts, reviewIdToIndex, 10)
-
-evalScore = evaluateRecommendations(userForEval, divRecommendations, removedBizs, bizs, vectorizedReviewTexts, reviewIdToIndex)
-
-print evalScore
-
+# bizIdToBiz = {}
+# for biz in bizs:
+#     bizIdToBiz[biz['business_id']] = biz
+#
+# queryUser = random.choice(users)
+# userForEval, removedBizs = makeEvalUser(queryUser, vectorizedReviewTexts, reviewIdToIndex, bizIdToBiz, 10)
+# neighborIndexesBySim = nearestNeighbors(userForEval, users, vectorizedReviewTexts, reviewIdToIndex)
+#
+# bizIdToBiz = {}
+# for biz in bizs:
+#     bizIdToBiz[biz['business_id']] = biz
+#
+# queryUser = random.choice(users)
+# userForEval, removedBizs = makeEvalUser(queryUser, vectorizedReviewTexts, reviewIdToIndex, bizIdToBiz, 10)
+# neighborIndexesBySim = nearestNeighbors(userForEval, users, vectorizedReviewTexts, reviewIdToIndex)
+#
+# for neighbor in neighborIndexesBySim:
+#     print neighbor
+#
+# nearestNeighbor = users[neighborIndexesBySim[0][1]]
+#
+# neighborBizs = findUserBizs(nearestNeighbor, bizIdToBiz)
+# divRecommendations = divergentBizs(userForEval, neighborBizs, vectorizedReviewTexts, reviewIdToIndex, 10)
+#
+# evalScore = evaluateRecommendations(userForEval, divRecommendations, removedBizs, bizs, vectorizedReviewTexts, reviewIdToIndex)
+#
+# print evalScore
+#
