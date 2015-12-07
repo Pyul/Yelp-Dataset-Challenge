@@ -7,8 +7,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 userRead = open('../yelp_academic_dataset_user.json')
 minUserReviews = 100
 minBizReviews = 100
-maxUsers = 50
-maxBizs = 50
+maxUsers = 40
+maxBizs = 40
 maxReviewsPerBiz = 20
 city = 'Pittsburgh'
 

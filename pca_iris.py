@@ -20,6 +20,7 @@ print('explained variance ratio (first two components): %s'
 
 plt.figure()
 for c, i, target_name in zip("rgb", [0, 1, 2], target_names):
+    print y, i
     plt.scatter(X_r[y == i, 0], X_r[y == i, 1], c=c, label=target_name)
 plt.legend()
 plt.title('PCA of IRIS dataset')
