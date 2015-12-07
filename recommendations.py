@@ -1,39 +1,10 @@
-import json, sklearn, pickle, random, copy, collabf, csp
+import json, sklearn, pickle, random, copy, collabf, csp, util, math
 import numpy as np
 import pandas as pd
 from collections import Counter
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel, cosine_similarity
 from scipy.sparse import csr_matrix
-
-random.seed(42)
-
-
-class Recommender:
-
-    def __init__(self, users, bizs, reviews, k = 10):
-        self.users = users
-        self.bizs = bizs
-        self.reviews = reviews
-        self.finalK = k
-        self.initialK = 10*k
-
-    def recommend(self, queryUsers, constraints=None):
-        recommendations = {}
-        for user in queryUsers:
-            recs = self.topKRecommendations(user)
-            if user in constraints and constraints[user] != None:
-                recs = csp.reduceBizs(recs, constraints[user])
-            recommendations[user.id] = recs
-        return recommendations
-
-    def topKRecommendations(self, user):
-        # returns initialK recommendations (list of (score, Biz) tuples)
-        collabFilteringList = collabf.userUserFilter(user, self)
-        # narrows down to finalK recommendations
-        collabFilteringList = collabf.similarityFilter(user, collabFilteringList, self)
-        return collabFilteringList
-
 
 
 # def getCosineSimilarityMatrix(reviewTextArray):
@@ -144,30 +115,27 @@ def findSimilarity(x, y, vectorizedReviewTexts, reviewIdToIndex):
     return cosine_similarity(xCombinedVectors, yCombinedVectors)
 
 
-users = pickle.load(open('user_list')) #list of python objects that are dictionaries. They have the same fields as the yelp json objects
-# i added a field called "reviews" that returns a list of review objects that are associated with a business or user
-bizs = pickle.load(open('business_list'))
-reviews = pickle.load(open('review_list'))
 # bizIdToReview = pickle.load('biz_id_to_review')
 # bizIdToText = pickle.load('biz_id_to_review_text')
 
 # hist = np.histogram(reviews, bins=[1,10,30,50,100,300,800])
 #NLTK - NLP library
-reviewIdToIndex = {}
-reviewIds = []
-reviewCorpus = []
-for i in xrange(len(reviews)):
-    reviewIds.append(reviews[i]['review_id'])
-    reviewIdToIndex[reviews[i]['review_id']] = i
-    reviewCorpus.append(reviews[i]['text'])
 
-# combinedTexts = np.array(bizIdToReviewText.values())
-data = np.mat([np.transpose(reviewIds), np.transpose(reviewCorpus)])
-
-#data[0, :] is the array of all biz id's
-#data[1, :] is the array of all the reviews
-
-vectorizedReviewTexts = TfidfVectorizer().fit_transform(reviewCorpus)
+# reviewIdToIndex = {}
+# reviewIds = []
+# reviewCorpus = []
+# for i in xrange(len(reviews)):
+#     reviewIds.append(reviews[i]['review_id'])
+#     reviewIdToIndex[reviews[i]['review_id']] = i
+#     reviewCorpus.append(reviews[i]['text'])
+#
+# # combinedTexts = np.array(bizIdToReviewText.values())
+# data = np.mat([np.transpose(reviewIds), np.transpose(reviewCorpus)])
+#
+# #data[0, :] is the array of all biz id's
+# #data[1, :] is the array of all the reviews
+#
+# vectorizedReviewTexts = TfidfVectorizer().fit_transform(reviewCorpus)
 # cosSim = linear_kernel(vectorizedReviewTexts, vectorizedReviewTexts)
 # print cosSim
 # print max([(cosSim, index) for index, cosSim in enumerate(cosSim[0][1:])])
@@ -180,32 +148,49 @@ vectorizedReviewTexts = TfidfVectorizer().fit_transform(reviewCorpus)
 # print cos_sim
 # print 1.0*nZeros/(len(cos_sim)*len(cos_sim[0]))
 
-k = 20
-trainUsers = random.sample(users, k)
-testUsers =  random.sample(users, k)
+rec = pickle.load(open('pickledRecommender'))
 
-wCollabFiltering = learnCollabFiltering
-evalScore = evalCollabFiltering()
+minSim = 0.5
+while minSim < 1:
+    error = 0
+    rec.minSim = minSim
+    for i in xrange(10):
+        error += math.sqrt(rec.evalRecommendations())
+    print 'error: {}, minSim: {}'.format(error/5, minSim)
+    minSim += 0.05
+
+users = rec.getUsers()
+bizs = rec.getBizs()
+reviews = rec.getReviews()
+queryUser = random.choice(users)
+recommendations = rec.recommend([queryUser])
 
 
-recommendations = Recommendations.recommend(queryUsers)
+bizIdToBiz = {}
+for biz in bizs:
+    bizIdToBiz[biz['business_id']] = biz
 
-# bizIdToBiz = {}
-# for biz in bizs:
-#     bizIdToBiz[biz['business_id']] = biz
-#
-# queryUser = random.choice(users)
-# userForEval, removedBizs = makeEvalUser(queryUser, vectorizedReviewTexts, reviewIdToIndex, bizIdToBiz, 10)
-# neighborIndexesBySim = nearestNeighbors(userForEval, users, vectorizedReviewTexts, reviewIdToIndex)
-#
-# for neighbor in neighborIndexesBySim:
-#     print neighbor
-#
-# nearestNeighbor = users[neighborIndexesBySim[0][1]]
-#
-# neighborBizs = findUserBizs(nearestNeighbor, bizIdToBiz)
-# divRecommendations = divergentBizs(userForEval, neighborBizs, vectorizedReviewTexts, reviewIdToIndex, 10)
-#
-# evalScore = evaluateRecommendations(userForEval, divRecommendations, removedBizs, bizs, vectorizedReviewTexts, reviewIdToIndex)
-#
-# print evalScore
+queryUser = random.choice(users)
+userForEval, removedBizs = makeEvalUser(queryUser, vectorizedReviewTexts, reviewIdToIndex, bizIdToBiz, 10)
+neighborIndexesBySim = nearestNeighbors(userForEval, users, vectorizedReviewTexts, reviewIdToIndex)
+
+bizIdToBiz = {}
+for biz in bizs:
+    bizIdToBiz[biz['business_id']] = biz
+
+queryUser = random.choice(users)
+userForEval, removedBizs = makeEvalUser(queryUser, vectorizedReviewTexts, reviewIdToIndex, bizIdToBiz, 10)
+neighborIndexesBySim = nearestNeighbors(userForEval, users, vectorizedReviewTexts, reviewIdToIndex)
+
+for neighbor in neighborIndexesBySim:
+    print neighbor
+
+nearestNeighbor = users[neighborIndexesBySim[0][1]]
+
+neighborBizs = findUserBizs(nearestNeighbor, bizIdToBiz)
+divRecommendations = divergentBizs(userForEval, neighborBizs, vectorizedReviewTexts, reviewIdToIndex, 10)
+
+evalScore = evaluateRecommendations(userForEval, divRecommendations, removedBizs, bizs, vectorizedReviewTexts, reviewIdToIndex)
+
+print evalScore
+
