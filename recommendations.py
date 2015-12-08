@@ -155,11 +155,6 @@ def findSimilarity(x, y, vectorizedReviewTexts, reviewIdToIndex):
 ###############  Start code ###############
 rec = pickle.load(open('pickledRecommender'))
 inArrayForm = []
-for vec in rec.vectorizedUIPairs:
-    inArrayForm.append(vec.toarray())
-rec.vectorizedUIPairs = np.vstack(inArrayForm)
-print rec.vectorizedUIPairs.shape
-rec.reviewStars = np.array(rec.reviewStars)
 rec.regress()
 
 #

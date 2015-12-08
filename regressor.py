@@ -1,6 +1,7 @@
 import sys
 
 import numpy as np
+import scipy.sparse as sp
 import pandas as pd
 from sklearn.cross_validation import train_test_split
 import sklearn as sklearn
@@ -10,8 +11,91 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import LabelEncoder
 import matplotlib.pyplot as plt
 from math import sqrt
+from sklearn.feature_extraction import DictVectorizer
 
-def load_train_data(X, Y, train_size):
+def preprocessUsers(users):
+    pass
+
+def preprocessBizs(bizs):
+    categoryDicts = []
+    for biz in bizs:
+        categoryDicts.append(dict.fromkeys(biz.getCategories(), 1))
+    dictVect = DictVectorizer(sparse=False)
+    featurizedCategories = dictVect.fit_transform(categoryDicts)
+    for i in xrange(len(bizs)):
+        bizs[i].setFeaturizedCategories(featurizedCategories[i])
+
+    attributeDicts = []
+    for biz in bizs:
+        attr = biz.getAttributes()
+        keys = attr.keys()
+        for key in keys:
+            val = attr[key]
+            #correct for nested dicts
+            if isinstance(val, dict):
+                valkeys = val.keys()
+                for valkey in valkeys:
+                    attr[key + valkey] = val[valkey]
+                attr.pop(key)
+        attributeDicts.append(attr)
+    featurizedAttributes = dictVect.fit_transform(attributeDicts)
+    for i in xrange(len(bizs)):
+        bizs[i].setFeaturizedAttributes(featurizedAttributes[i])
+
+
+def preprocess(UIPairs, reviewStars, users, bizs):
+    # inArrayForm = []
+    # for vec in UIPairs:
+    #     inArrayForm.append(vec.toarray())
+    # vectorizedUIPairs = np.vstack(inArrayForm)
+    preprocessUsers(users)
+    preprocessBizs(bizs)
+
+    featureVector = np.ones((len(UIPairs), 1))
+
+    user0 = UIPairs[0][0]
+    biz0 = UIPairs[0][1]
+    lenVectorizedTextArray = max(user0.getVectorizedText().shape) + max(biz0.getVectorizedText().shape)
+    lenCategories = max(biz0.getFeaturizedCategories().shape)
+    lenAttributes = max(biz0.getFeaturizedAttributes().shape)
+
+    vectorizedUITexts = np.zeros((0, lenVectorizedTextArray))
+    vectorizedCategories = np.zeros((0, lenCategories))
+    vectorizedAttributes = np.zeros((0, lenAttributes))
+    # featureVector = np.concatenate((featureVector, vectorizedUITexts))
+
+    #add featurized categories for restaurants
+    for _, biz in UIPairs:
+        vcs = biz.getFeaturizedCategories()
+        vcs = vcs.reshape((1, lenCategories))
+        vectorizedCategories = np.append(vectorizedCategories, vcs, axis=0)
+    featureVector = np.hstack((featureVector, vectorizedCategories))
+
+    #add featurized attributes for restaurants
+    for _, biz in UIPairs:
+        vcs = biz.getFeaturizedAttributes()
+        vcs = vcs.reshape((1, lenAttributes))
+        vectorizedAttributes = np.append(vectorizedAttributes, vcs, axis=0)
+    featureVector = np.hstack((featureVector, vectorizedAttributes))
+
+    #add rating averages for user and restaurant
+    avgRatingPairs = np.zeros((0, 4))
+    for user, biz in UIPairs:
+        avgRatingPair = np.array([user.findAverageStars(), user.findStarStdDev(), biz.findAverageStars(), biz.findStarStdDev()])
+        avgRatingPair = avgRatingPair.reshape((1, 4))
+        avgRatingPairs = np.append(avgRatingPairs, avgRatingPair, axis=0)
+    featureVector = np.hstack((featureVector, avgRatingPairs))
+
+    # add features for vectorized texts
+    for user, biz in UIPairs:
+        vectorizedUIPair = sp.hstack((user.getVectorizedText(), biz.getVectorizedText()), format='csr')
+        vectorizedUIPair = vectorizedUIPair.toarray()
+        vectorizedUITexts = np.append(vectorizedUITexts, vectorizedUIPair, axis=0)
+    featureVector = np.hstack((featureVector, vectorizedUITexts))
+
+    return featureVector, np.array(reviewStars)
+
+def load_train_data(X, Y, train_size=0.8):
     # The competition datafiles are in the directory ../input
     # Read competition data files:
     # np.random.shuffle(X)
