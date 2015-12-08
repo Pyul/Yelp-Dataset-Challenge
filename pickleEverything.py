@@ -143,16 +143,7 @@ for user in users:
 for biz in bizs:
     biz.combineVectorizedReviews()
 
-vectorizedUIPairs = []
-reviewStars = []
-for user in users:
-    for biz in user.getReviewedBizs():
-        vectorizedUIPair = sp.hstack((user.getVectorizedText(), biz.getVectorizedText()), format='csr')
-        review = user.getReviewFromBizId(biz.getId())
-        vectorizedUIPairs.append(vectorizedUIPair)
-        reviewStars.append(review.getStars())
-
-recommender = Recommender(users, bizs, reviews, vectorizedUIPairs, reviewStars)
+recommender = Recommender(users, bizs, reviews)
 print len(users)
 print len(bizs)
 print len(reviews)

@@ -1,4 +1,4 @@
-import json, collections, numpy as np, random, csp, copy, regressor
+import json, collections, numpy as np, random, csp, copy, regressor, stat
 from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
 import pickle
@@ -64,6 +64,7 @@ class User:
         self.yelpReviewCount = userJson['review_count']
         self.yelpAverageStars = userJson['average_stars']
         self.extractedAverageStars = None
+        self.starStdDev = None
         self.votes = userJson['votes']
         self.reviews = []
         self.vectorizedText = None
@@ -118,16 +119,33 @@ class User:
         if self.extractedAverageStars is not None:
             return self.extractedAverageStars
         else:
-            reviews = self.getReviews()
-            if reviews:
-                totalStars = 0
-                for review in reviews:
-                    totalStars += review.stars
-                averageStars = 1.0*totalStars/len(reviews)
-                self.extractedAverageStars = averageStars
-                return averageStars
+            if self.reviews:
+                self.computeStats()
+                return self.extractedAverageStars
             else:
                 return None
+
+    def findStarStdDev(self):
+        if self.starStdDev is not None:
+            return self.starStdDev
+        else:
+            if self.reviews:
+                self.computeStats()
+                return self.starStdDev
+            else:
+                return None
+
+    def computeStats(self):
+        if self.reviews:
+            starsList = []
+            for review in self.reviews:
+                starsList.append(review.stars)
+            self.extractedAverageStars = np.mean(starsList)
+            self.starStdDev = np.std(starsList)
+            return True
+        else:
+            return False
+
 
     def getVotes(self):
         return self.votes
@@ -160,16 +178,31 @@ class Biz:
         self.lon = bizJson['longitude']
         self.yelpStars = bizJson['stars']
         self.extractedAverageStars = None
+        self.starStdDev = None
         self.yelpReviewCount = bizJson['review_count']
         self.categories = set(bizJson['categories'])
+        self.featurizedCategories = None
         self.open = bizJson['open']
         self.reviews = []
         self.vectorizedText = None
         self.attributes = bizJson['attributes']
+        self.featurizedAttributes = None
         self.reviewerIds = set()
 
     def setId(self, Id):
         self.id = Id
+
+    def setFeaturizedAttributes(self, phi):
+        self.featurizedAttributes = phi
+
+    def getFeaturizedAttributes(self):
+        return self.featurizedAttributes
+
+    def setFeaturizedCategories(self, phi):
+        self.featurizedCategories = phi
+
+    def getFeaturizedCategories(self):
+        return self.featurizedCategories
 
     def getAttributes(self):
         return self.attributes
@@ -217,16 +250,32 @@ class Biz:
         if self.extractedAverageStars is not None:
             return self.extractedAverageStars
         else:
-            reviews = self.getReviews()
-            if reviews:
-                totalStars = 0
-                for review in reviews:
-                    totalStars += review.stars
-                averageStars = 1.0*totalStars/len(reviews)
-                self.extractedAverageStars = averageStars
-                return averageStars
+            if self.reviews:
+                self.computeStats()
+                return self.extractedAverageStars
             else:
                 return None
+
+    def findStarStdDev(self):
+        if self.starStdDev is not None:
+            return self.starStdDev
+        else:
+            if self.reviews:
+                self.computeStats()
+                return self.starStdDev
+            else:
+                return None
+
+    def computeStats(self):
+        if self.reviews:
+            starsList = []
+            for review in self.reviews:
+                starsList.append(review.stars)
+            self.extractedAverageStars = np.mean(starsList)
+            self.starStdDev = np.std(starsList)
+            return True
+        else:
+            return False
 
     def addReview(self, review):
         self.reviews.append(review)
@@ -259,16 +308,21 @@ class Recommender:
     KFOLDS = 5
     MIN_USER_USER_COS_SIM = 0.7
 
-    def __init__(self, users, bizs, reviews, vectorizedUIPairs, reviewStars, k=10):
+    def __init__(self, users, bizs, reviews, k=10):
         self.users = users
         self.bizs = bizs
         self.reviews = reviews
         self.finalK = k
         self.initialK = 10*k
-        self.vectorizedUIPairs = vectorizedUIPairs
-        self.reviewStars = reviewStars
         self.simTheta = None
         self.minSim = 0.5
+        self.UIPairs = []
+        self.reviewStars = []
+        for user in users:
+            for biz in user.getReviewedBizs():
+                review = user.getReviewFromBizId(biz.getId())
+                self.reviewStars.append(review.getStars())
+                self.UIPairs.append((user, biz))
 
     def getUsers(self):
         return self.users
@@ -332,8 +386,7 @@ class Recommender:
         # load traning set
         # first column = y
         # second to end = x
-        Xtrain = self.vectorizedUIPairs
-        Ytrain = self.reviewStars
+        Xtrain, Ytrain = regressor.preprocess(self.UIPairs, self.reviewStars, self.users, self.bizs)
 
         # start training
         #regr,score = train(Xtrain,model='SVM')
