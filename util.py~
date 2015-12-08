@@ -347,11 +347,11 @@ class Recommender:
         # learning curve for different n_estimators
         trainscores=[]
         testscores=[]
-        treenum=range(1,52,5)
+        treenum=range(1,51,4)
         for n_estimator in treenum:
             trainscore = 0.
             testscore = 0.
-            niter = 5
+            niter = 10
             for i in range(niter):
                 regr,score1,score2 = \
                     regressor.train(Xtrain, Ytrain, model='Random Forest', n_estimators=n_estimator)
