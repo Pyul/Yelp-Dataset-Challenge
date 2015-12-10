@@ -1,6 +1,7 @@
-import pickle, json, collections, operator, sys
+import pickle, json, collections, operator, re, string
 from util import User, Biz, Review, Recommender
 import numpy as np
+from nltk.corpus import stopwords
 import scipy.sparse as sp
 from sklearn.feature_extraction.text import TfidfVectorizer
 
@@ -99,11 +100,12 @@ for jsonReview in jsonReviews:
 #         reviews.append(review)
 # reviewsRead.close()
 
-
-
 reviewIdToIndex = {}
 reviewIds = []
 reviewCorpus = []
+
+
+
 reviewStars = []
 for i in xrange(len(reviews)):
     reviewIds.append(reviews[i].getId())
@@ -112,8 +114,25 @@ for i in xrange(len(reviews)):
     reviewStars.append(reviews[i].getStars())
     reviews[i].setText(None)
 
-# combinedTexts = np.array(bizIdToReviewText.values())
-data = np.mat([np.transpose(reviewIds), np.transpose(reviewCorpus)])
+# preprocess corpus to remove stopwords
+processedCorpus = []
+remove_punctuation_map = dict((ord(char), None) for char in string.punctuation)
+remove_punctuation_map.pop(ord('\''), None)
+stopwordsEng = stopwords.words('english')
+removeStopWordsMap = dict((stopWord, None) for stopWord in stopwordsEng)
+for doc in reviewCorpus:
+    newDoc = doc.translate(remove_punctuation_map)
+    newDoc = newDoc.lower()
+    tokens = re.findall(r"[\w\u0027]+", newDoc)
+    tokens = [word for word in tokens if word not in stopwords.words('english')]
+    newDoc = ' '.join(tokens)
+    processedCorpus.append(newDoc)
+reviewCorpus = processedCorpus
+
+pickle.dump(reviewCorpus, open('reviewCorpus', 'wb'))
+
+# data = np.mat([np.transpose(reviewIds), np.transpose(reviewCorpus)])
+
 
 #data[0, :] is the array of all biz id's
 #data[1, :] is the array of all the reviews
