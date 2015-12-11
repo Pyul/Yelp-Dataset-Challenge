@@ -110,6 +110,14 @@ def preprocessJacard(UIPairs):
         i += 1
     return jacard
 
+def preprocessBaseline(UIPairs):
+    userAverages = np.zeros(len(UIPairs))
+    i = 0
+    for user, _ in UIPairs:
+        userAverages[i] = user.findAverageStars()
+        i += 1
+    return userAverages
+
 def preprocessUIPairs(UIPairs, users, bizs, dictVectCategoriesInput=None, dictVectAttributesInput=None):
     # inArrayForm = []
     # for vec in UIPairs:

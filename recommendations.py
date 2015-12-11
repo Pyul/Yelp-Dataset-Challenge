@@ -178,15 +178,20 @@ constraints["maxPrice"] = 2
 userConstraints = {}
 userConstraints[queryUser.getId()] = constraints
 recommendations = rec.recommend([queryUser], userConstraints)
+
 for userId in recommendations.keys():
     recommendedBizs = recommendations[userId]
+    scores = [recommendedBizs[i][0] for i in xrange(len(recommendedBizs))]
+    recs = [recommendedBizs[i][1] for i in xrange(len(recommendedBizs))]
     print 'For user {}, we recommend (in order of best match to worst match):'.format(userId)
-    for biz in recommendedBizs:
-        print biz.getName()
+    for i in xrange(len(recommendedBizs)):
+        print "{} ({:.3f})".format(recs[i].getName(), scores[i][0][0])
 
 recommendations = rec.recommend([queryUser])
 for userId in recommendations.keys():
     recommendedBizs = recommendations[userId]
+    scores = [recommendedBizs[i][0] for i in xrange(len(recommendedBizs))]
+    recs = [recommendedBizs[i][1] for i in xrange(len(recommendedBizs))]
     print 'For user {}, we recommend (in order of best match to worst match):'.format(userId)
-    for biz in recommendedBizs:
-        print biz.getName()
+    for i in xrange(len(recommendedBizs)):
+        print "{} ({:.3f})".format(recs[i].getName(), scores[i][0][0])

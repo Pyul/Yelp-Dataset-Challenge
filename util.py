@@ -407,8 +407,9 @@ class Recommender:
         # load traning set
         # first column = y
         # second to end = x
-        # Xtrain, dictVectCategories, dictVectAttributes = regressor.preprocessUIPairs(self.UIPairs, self.users, self.bizs, self.dictVectCategories, self.dictVectAttributes)
-        XtrainJacard = regressor.preprocessJacard(self.UIPairs)
+        Xtrain, dictVectCategories, dictVectAttributes = regressor.preprocessUIPairs(self.UIPairs, self.users, self.bizs, self.dictVectCategories, self.dictVectAttributes)
+        # XtrainJacard = regressor.preprocessJacard(self.UIPairs)
+        XtrainBaseline = regressor.preprocessBaseline(self.UIPairs)
         if self.dictVectCategories is None:
             self.dictVectAttributes = dictVectAttributes
             self.dictVectCategories = dictVectCategories
@@ -456,7 +457,7 @@ class Recommender:
                     #find optimal assignment
                     optimal = csp.evaluateAssignments(len(assignments[0]), assignments)
                     recs = optimal.values()
-            recs = [recs[i][1] for i in xrange(len(recs))]
+            # recs = [recs[i][1] for i in xrange(len(recs))]
             recommendations[user.getId()] = recs
         return recommendations
 
