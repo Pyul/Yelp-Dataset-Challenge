@@ -9,6 +9,7 @@ from sklearn import svm
 from sklearn import linear_model
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.feature_extraction import DictVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 #from sklearn.preprocessing import LabelEncoder
 import matplotlib.pyplot as plt
 from math import sqrt
@@ -16,12 +17,18 @@ from math import sqrt
 def preprocessUsers(users):
     pass
 
-def preprocessBizs(bizs):
+def preprocessBizs(bizs, dictVectCategoriesInput, dictVectAttributesInput):
+    train = True if dictVectCategoriesInput is None else False
     categoryDicts = []
+    dictVectCatFinal = None
     for biz in bizs:
         categoryDicts.append(dict.fromkeys(biz.getCategories(), 1))
-    dictVect = DictVectorizer(sparse=False)
-    featurizedCategories = dictVect.fit_transform(categoryDicts)
+    if train:
+        dictVectCatFinal = DictVectorizer(sparse=False)
+        featurizedCategories = dictVectCatFinal.fit_transform(categoryDicts)
+    else:
+        featurizedCategories = dictVectCategoriesInput.transform(categoryDicts)
+        dictVectCatFinal = dictVectCategoriesInput
     for i in xrange(len(bizs)):
         bizs[i].setFeaturizedCategories(featurizedCategories[i])
 
@@ -38,12 +45,26 @@ def preprocessBizs(bizs):
                     attr[key + valkey] = val[valkey]
                 attr.pop(key)
         attributeDicts.append(attr)
-    featurizedAttributes = dictVect.fit_transform(attributeDicts)
+    dictVectAttrFinal = None
+    if train:
+        dictVectAttrFinal = DictVectorizer(sparse=False)
+        featurizedAttributes = dictVectAttrFinal.fit_transform(attributeDicts)
+    else:
+        featurizedAttributes = dictVectAttributesInput.transform(attributeDicts)
+        dictVectAttrFinal = dictVectAttributesInput
     for i in xrange(len(bizs)):
         bizs[i].setFeaturizedAttributes(featurizedAttributes[i])
+    return dictVectCatFinal, dictVectAttrFinal
 
+def preprocessCosineSimilarity(UIPairs):
+    similarity = np.zeros(len(UIPairs))
+    i = 0
+    for user, biz in UIPairs:
+        similarity[i] = cosine_similarity(user.getVectorizedText(), biz.getVectorizedText())
+        i += 1
+    return similarity
 
-def preprocessSimilarity(UIPairs):
+def preprocessCategorySimilarity(UIPairs):
     similarity = np.zeros(len(UIPairs))
     index = 0
     bannedCategories = set()
@@ -70,21 +91,21 @@ def preprocessSimilarity(UIPairs):
     return similarity
 
 
-def preprocessUIPairs(UIPairs, users, bizs):
+def preprocessUIPairs(UIPairs, users, bizs, dictVectCategoriesInput=None, dictVectAttributesInput=None):
     # inArrayForm = []
     # for vec in UIPairs:
     #     inArrayForm.append(vec.toarray())
     # vectorizedUIPairs = np.vstack(inArrayForm)
     preprocessUsers(users)
-    preprocessBizs(bizs)
+    dictVectCategories, dictVectAttributes = preprocessBizs(bizs, dictVectCategoriesInput, dictVectAttributesInput)
 
     featureVector = np.ones((len(UIPairs), 1))
 
     user0 = UIPairs[0][0]
     biz0 = UIPairs[0][1]
     lenVectorizedTextArray = max(user0.getVectorizedText().shape) + max(biz0.getVectorizedText().shape)
-    lenCategories = max(biz0.getFeaturizedCategories().shape)
-    lenAttributes = max(biz0.getFeaturizedAttributes().shape)
+    lenCategories = max(biz0.getFeaturizedCategories().shape) if dictVectCategories is None else len(dictVectCategories.feature_names_)
+    lenAttributes = max(biz0.getFeaturizedAttributes().shape) if dictVectAttributes is None else len(dictVectAttributes.feature_names_)
 
     vectorizedUITexts = np.zeros((0, lenVectorizedTextArray))
     vectorizedCategories = np.zeros((0, lenCategories))
@@ -122,7 +143,7 @@ def preprocessUIPairs(UIPairs, users, bizs):
         vectorizedUITexts = np.append(vectorizedUITexts, vectorizedUIPair, axis=0)
     featureVector = np.hstack((featureVector, vectorizedUITexts))
 
-    return featureVector
+    return featureVector, dictVectCategories, dictVectAttributes
 
 
 

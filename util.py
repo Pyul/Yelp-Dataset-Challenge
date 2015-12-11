@@ -215,6 +215,9 @@ class Biz:
     def getAttributes(self):
         return self.attributes
 
+    def getCategories(self):
+        return self.categories
+
     def getId(self):
         return self.id
 
@@ -320,7 +323,7 @@ random.seed(42)
 
 class Recommender:
 
-    NSIMILAR_USERS = 50
+    NSIMILAR_USERS = 3
     KFOLDS = 5
     MIN_USER_USER_COS_SIM = 0.7
 
@@ -334,6 +337,8 @@ class Recommender:
         self.minSim = 0.5
         self.UIPairs = []
         self.reviewStars = []
+        self.dictVectCategories = None
+        self.dictVectAttributes = None
         for user in users:
             for biz in user.getReviewedBizs():
                 review = user.getReviewFromBizId(biz.getId())
@@ -402,41 +407,64 @@ class Recommender:
         # load traning set
         # first column = y
         # second to end = x
-        Xtrain = regressor.preprocessUIPairs(self.UIPairs, self.users, self.bizs)
+        Xtrain, dictVectCategories, dictVectAttributes = regressor.preprocessUIPairs(self.UIPairs, self.users, self.bizs, self.dictVectCategories, self.dictVectAttributes)
+        if self.dictVectCategories is None:
+            self.dictVectAttributes = dictVectAttributes
+            self.dictVectCategories = dictVectCategories
         YtrainRatings = np.array(self.reviewStars)
-        YtrainSimilarity = regressor.preprocessSimilarity(self.UIPairs)
+        YtrainCategorySimilarity = regressor.preprocessCategorySimilarity(self.UIPairs)
+        YtrainCosineSimilarity = regressor.preprocessCosineSimilarity(self.UIPairs)
         # start training
         #regr,score = train(Xtrain,model='SVM')
         regr,score = regressor.train(Xtrain, YtrainRatings, model='Random Forest', n_estimators=10)
-        print("CV Score = "+str(score))
-        regr,score = regressor.train(Xtrain, YtrainRatings, model='Linear Regression')
-        print("Linear Regression Score = "+str(score))
-        regr,score = regressor.train(Xtrain, YtrainRatings, model='SVM', kernel='linear')
-        print("SVM linear = "+str(score))
-        regr,score = regressor.train(Xtrain, YtrainRatings, model='SVM', kernel='poly')
-        print("SVM poly = "+str(score))
+        # print("CV Score = "+str(score))
+        # regr,score = regressor.train(Xtrain, YtrainRatings, model='Linear Regression')
+        # print("Linear Regression Score = "+str(score))
+        # regr,score = regressor.train(Xtrain, YtrainRatings, model='SVM', kernel='linear')
+        # print("SVM linear = "+str(score))
+        # regr,score = regressor.train(Xtrain, YtrainRatings, model='SVM', kernel='poly')
+        # print("SVM poly = "+str(score))
         # load test set
         # Xtest = np.random.rand(5, 3)
 
         # make prediction
         # y_pred = regr.predict(Xtest)
         print(" - Finished.")
-
-    def train(self):
-        review0 = self.reviews[0]
-        self.simTheta = csr_matrix(np.zeros(review0.getVectorizedText().shape))
-
+        return regr
 
     def recommend(self, queryUsers, constraints=None):
+        constraints = {} if constraints is None else constraints
         recommendations = {}
         for user in queryUsers:
-            recs = self.topKRecommendations(user)
-            if user in constraints and constraints[user] != None:
-                recs = csp.reduceBizs(recs, constraints[user])
-            recommendations[user.id] = recs
+            recs = self.topKRecommendationsML(user)
+            recommendations[user.getId()] = recs
+            # if user.getId() not in constraints and constraints[user] != None:
+            #     recs = csp.reduceBizs(recs, constraints[user])
+            #     recommendations[user.id] = recs
         return recommendations
 
-    def topKRecommendations(self, user):
+
+    def topKRecommendationsML(self, user):
+        #similarUsers is list of tuples of (user-user similarity score, user)
+        similarUsers = self.rankedSimilarUsers(user)
+        #candidateBizs is list uf tuples of (user-user sim* user's stars, biz)
+        candidateBizs = self.findCandidateBizs(user, similarUsers)
+        candidateBizs = [candidateBizs[i][1] for i in xrange(len(candidateBizs))]
+        model = self.regress()
+        UIPairs = []
+        for biz in candidateBizs:
+                UIPairs.append((user, biz))
+        X = regressor.preprocessUIPairs(UIPairs, [user], candidateBizs, self.dictVectCategories, self.dictVectAttributes)
+        p_ui = model.predict(X[0])
+        result = []
+        for i in xrange(len(candidateBizs)):
+            result.append((p_ui[i], candidateBizs[i]))
+        return result
+
+
+
+
+    def topKRecommendationsCF(self, user):
         # returns initialK recommendations (list of (score, Biz) tuples)
         collabFilteringList = self.userUserFilter(user)
         # narrows down to finalK recommendations
@@ -486,8 +514,7 @@ class Recommender:
             if user is other:
                 continue
             sim = cosine_similarity(user.getVectorizedText(), other.getVectorizedText())
-            if sim > self.minSim:
-                similarUsers.append((sim, other))
+            similarUsers.append((sim, other))
         similarUsers.sort(reverse=True)
         limit = min(self.NSIMILAR_USERS, len(similarUsers))
         return similarUsers[:limit]
@@ -501,7 +528,7 @@ class Recommender:
         for simScore, other in similarUsers:
             otherBizs = other.getReviewedBizs()
             for biz in otherBizs:
-                review = other.reviewFromBizId(biz.id)
+                review = other.getReviewFromBizId(biz.id)
                 # if it's not already a candidate and the query user does not know it and the other gave it a good score
                 if biz.id not in candidateBizIds and biz.id not in userBizIds and review.getStars() > other.findAverageStars():
                     candidateBizIds.add(biz.id)

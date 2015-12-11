@@ -153,23 +153,27 @@ def findSimilarity(x, y, vectorizedReviewTexts, reviewIdToIndex):
 
 ###############  Start code ###############
 rec = pickle.load(open('pickledRecommender'))
-inArrayForm = []
-rec.regress()
+# rec.regress()
 
-minSim = 0.5
-while minSim < 1:
-    error = 0
-    rec.minSim = minSim
-    for i in xrange(10):
-        error += math.sqrt(rec.evalRecommendations())
-    print 'error: {}, minSim: {}'.format(error/5, minSim)
-    minSim += 0.05
+# minSim = 0.5
+# while minSim < 1:
+#     error = 0
+#     rec.minSim = minSim
+#     for i in xrange(10):
+#         error += math.sqrt(rec.evalRecommendations())
+#     print 'error: {}, minSim: {}'.format(error/5, minSim)
+#     minSim += 0.05
 
 users = rec.getUsers()
 bizs = rec.getBizs()
 reviews = rec.getReviews()
 queryUser = random.choice(users)
-# recommendations = rec.recommend([queryUser])
+recommendations = rec.recommend([queryUser])
+for userId in recommendations.keys():
+    recommendedBizs = recommendations[userId]
+    print 'For user {}, we recommend:'.format(userId)
+    for biz in recommendedBizs:
+        print biz.getName()
 
 # Make a heat plot of restaurant-restaurant similarities
 lenbiz = bizs[0].vectorizedText.shape[1]
