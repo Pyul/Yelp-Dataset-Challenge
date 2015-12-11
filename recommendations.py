@@ -6,6 +6,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel, cosine_similarity
 from scipy.sparse import csr_matrix
 import pca, heatplot
+import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -157,7 +158,6 @@ rec = pickle.load(open('pickledRecommender'))
 inArrayForm = []
 rec.regress()
 
-#
 # minSim = 0.5
 # while minSim < 1:
 #     error = 0
@@ -168,13 +168,14 @@ rec.regress()
 #     minSim += 0.05
 
 # ### Start plotting ###
-# users = rec.getUsers()
-# bizs = rec.getBizs()
-# reviews = rec.getReviews()
-# queryUser = random.choice(users)
+#users = rec.getUsers()
+#bizs = rec.getBizs()
+#reviews = rec.getReviews()
+#queryUser = random.choice(users)
+
 # # recommendations = rec.recommend([queryUser])
-#
-# print users[0].id
+# #
+# # print users[0].id
 # numusers = 20
 # numrestaurants = 20
 #
@@ -231,19 +232,40 @@ rec.regress()
 #         similaritymatrix[i,j] = cosine_similarity(allbizsvectorizedText[i,:],allusersvectorizedText[j,:])
 # heatplot.heatplot(similaritymatrix,reslabels,userlabels)
 
+# Plot similarity versus star rating
+#numusers = 40
+#sim = np.zeros((473,))
+#rat = np.zeros((473,))
+#cnt = 0
+#for i in range(numusers):
+#    numrev = len(users[i].reviews)
+#    for j in range(numrev):
+#        vec1 = users[i].vectorizedText.toarray()
+#        vec2 = users[i].reviews[j].vectorizedText.toarray()
+#        similarity = cosine_similarity(vec1,vec2)
+#        rating = users[i].reviews[j].stars
+#        sim[cnt] = similarity
+#        rat[cnt] = rating
+#        cnt += 1
 
+#simavg = []
+#simstd = []
+#cnt = 0
+#for rating in [1,2,3,4,5]:
+#    list = [sim[i] for i in range(473) if rat[i]==rating]
+#    simavg.append(sum(list)/float(len(list)))
+#    simstd.append(np.std(list))
+## plt.plot(simavg,[1,2,3,4,5],'b.-')
+#plt.plot(sim,rat,'g^')
+#(_, caps, _) = plt.errorbar(simavg,[1,2,3,4,5],xerr=simstd,marker='o',\
+#             markersize=10,linewidth=3,elinewidth=3,capsize=5)
+#for cap in caps:
+#    cap.set_markeredgewidth(3)
+#plt.axis((0,1,0.5,5.5))
 
-
-
-
-
-
-
-
-
-
-
-
+#plt.xlabel('User-Res. Similarity')
+#plt.ylabel('User-Res. Rating')
+#plt.show()
 
 # Make a PCA plot
 # pca.plotpca(allusersvectorizedText)

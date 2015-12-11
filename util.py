@@ -382,46 +382,75 @@ class Recommender:
         Xtrain, Ytrain = regressor.preprocess(self.UIPairs, self.reviewStars, self.users, self.bizs)
 
         # start training
-        # regr,trainscore,testscore = regressor.train(Xtrain, Ytrain, model='Random Forest', n_estimators=10)
-        # print("RF // Training error = "+str(trainscore)+' // Test error = ' + str(testscore))
-        #
-        # regr,trainscore,testscore = regressor.train(Xtrain, Ytrain, model='Linear Regression')
-        # print("LR // Training error = "+str(trainscore)+' // Test error = ' + str(testscore))
-        #
-        # regr,trainscore,testscore = regressor.train(Xtrain, Ytrain, model='SVM', kernel='linear')
-        # print("SVM LNR // Training error = "+str(trainscore)+' // Test error = ' + str(testscore))
-        # regr,trainscore,testscore = regressor.train(Xtrain, Ytrain, model='SVM', kernel='poly',degree=3)
-        # print("SVM POLY deg3 // Training error = "+str(trainscore)+' // Test error = ' + str(testscore))
-        # regr,trainscore,testscore = regressor.train(Xtrain, Ytrain, model='SVM', kernel='poly',degree=4)
-        # print("SVM POLY deg4 // Training error = "+str(trainscore)+' // Test error = ' + str(testscore))
-        # regr,trainscore,testscore = regressor.train(Xtrain, Ytrain, model='SVM', kernel='poly',degree=5)
-        # print("SVM POLY deg5 // Training error = "+str(trainscore)+' // Test error = ' + str(testscore))
+        regr,trainscore,testscore = regressor.train(Xtrain, Ytrain, model='Linear Regression')
+        print("LR // Training error = "+str(trainscore)+' // Test error = ' + str(testscore))
 
-        # learning curve for different n_estimators
-        trainscores=[]
-        testscores=[]
-        treenum=range(1,52,5)
-        for n_estimator in treenum:
-            trainscore = 0.
-            testscore = 0.
-            niter = 5
-            for i in range(niter):
-                regr,score1,score2 = \
-                    regressor.train(Xtrain, Ytrain, model='Random Forest', n_estimators=n_estimator)
-                trainscore += score1
-                testscore += score2
-            print("No. of trees = "+str(n_estimator)+\
-                      " -> Training error = "+str(trainscore/float(niter))+\
-                      ' // Test error = ' + str(testscore/float(niter)))
-            trainscores.append(trainscore/float(niter))
-            testscores.append(testscore/float(niter))
-        plt.plot(treenum,trainscores,'g^',label='Training Error')
-        plt.plot(treenum,testscores,'bs',label='Test Error')
-        plt.xlabel('No. of trees')
-        plt.legend()
-        plt.show()
+        regr,trainscore,testscore = regressor.train(Xtrain, Ytrain, model='Random Forest', n_estimators=7)
+        print("RF // Training error = "+str(trainscore)+' // Test error = ' + str(testscore))
+
+        #regr,trainscore,testscore = regressor.train(Xtrain, Ytrain, model='SVM', kernel='linear')
+        #print("SVM LNR // Training error = "+str(trainscore)+' // Test error = ' + str(testscore))
+        regr,trainscore,testscore = regressor.train(Xtrain, Ytrain, model='SVM', kernel='poly',degree=3)
+        print("SVM POLY deg3 // Training error = "+str(trainscore)+' // Test error = ' + str(testscore))
+        #regr,trainscore,testscore = regressor.train(Xtrain, Ytrain, model='SVM', kernel='poly',degree=4)
+        #print("SVM POLY deg4 // Training error = "+str(trainscore)+' // Test error = ' + str(testscore))
+        #regr,trainscore,testscore = regressor.train(Xtrain, Ytrain, model='SVM', kernel='poly',degree=5)
+        #print("SVM POLY deg5 // Training error = "+str(trainscore)+' // Test error = ' + str(testscore))
+
+        regr,trainscore,testscore = regressor.train(Xtrain, Ytrain, model='NN')
+        print("Neural Nets // Training error = "+str(trainscore)+' // Test error = ' + str(testscore))
 
         # # learning curve for different n_estimators
+        # trainscores=[]
+        # testscores=[]
+        # treenum=range(1,16,1)
+        # for n_estimator in treenum:
+        #     trainscore = 0.
+        #     testscore = 0.
+        #     niter = 10
+        #     for i in range(niter):
+        #         regr,score1,score2 = \
+        #             regressor.train(Xtrain, Ytrain, model='Random Forest', n_estimators=n_estimator)
+        #         trainscore += score1
+        #         testscore += score2
+        #     print("No. of trees = "+str(n_estimator)+\
+        #               " -> Training error = "+str(trainscore/float(niter))+\
+        #               ' // Test error = ' + str(testscore/float(niter)))
+        #     trainscores.append(trainscore/float(niter))
+        #     testscores.append(testscore/float(niter))
+        # plt.plot(treenum,trainscores,'g^',label='Training Error')
+        # plt.plot(treenum,testscores,'bs',label='Test Error')
+        # plt.xlabel('No. of trees')
+        # plt.ylabel('Root-mean-squared error')
+        # plt.legend()
+        # plt.show()
+        #
+        # # learning curve for different no. of units for neural nets
+        #trainscores=[]
+        #testscores=[]
+        #unitnum=range(1,100,10)
+        #for n_units in unitnum:
+        #     trainscore = 0.
+        #     testscore = 0.
+        #     niter = 10
+        #     for i in range(niter):
+        #         regr,score1,score2 = \
+        #             regressor.train(Xtrain, Ytrain, model='NN', n_units=n_units)
+        #         trainscore += score1
+        #         testscore += score2
+        #     print("No. of units = "+str(n_units)+\
+        #               " -> Training error = "+str(trainscore/float(niter))+\
+        #               ' // Test error = ' + str(testscore/float(niter)))
+        #     trainscores.append(trainscore/float(niter))
+        #     testscores.append(testscore/float(niter))
+        #plt.plot(unitnum,trainscores,'g^-',label='Training Error')
+        #plt.plot(unitnum,testscores,'bs-',label='Test Error')
+        #plt.xlabel('No. of units')
+        #plt.ylabel('Root-mean-squared error')
+        #plt.legend()
+        #plt.show()
+
+        # # learning curve for different number of folds
         # trainscores=[]
         # testscores=[]
         # kfold=np.linspace(0.1, 0.9, num=9)

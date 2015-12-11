@@ -8,6 +8,7 @@ import sklearn as sklearn
 from sklearn import svm
 from sklearn import linear_model
 from sklearn.ensemble import RandomForestRegressor
+from sknn.mlp import Regressor, Layer
 from sklearn.preprocessing import LabelEncoder
 import matplotlib.pyplot as plt
 from math import sqrt
@@ -65,18 +66,18 @@ def preprocess(UIPairs, reviewStars, users, bizs):
     # featureVector = np.concatenate((featureVector, vectorizedUITexts))
 
     #add featurized categories for restaurants
-    for _, biz in UIPairs:
-        vcs = biz.getFeaturizedCategories()
-        vcs = vcs.reshape((1, lenCategories))
-        vectorizedCategories = np.append(vectorizedCategories, vcs, axis=0)
-    featureVector = np.hstack((featureVector, vectorizedCategories))
+    #for _, biz in UIPairs:
+    #    vcs = biz.getFeaturizedCategories()
+    #    vcs = vcs.reshape((1, lenCategories))
+    #    vectorizedCategories = np.append(vectorizedCategories, vcs, axis=0)
+    #featureVector = np.hstack((featureVector, vectorizedCategories))
 
     #add featurized attributes for restaurants
-    for _, biz in UIPairs:
-        vcs = biz.getFeaturizedAttributes()
-        vcs = vcs.reshape((1, lenAttributes))
-        vectorizedAttributes = np.append(vectorizedAttributes, vcs, axis=0)
-    featureVector = np.hstack((featureVector, vectorizedAttributes))
+    #for _, biz in UIPairs:
+    #    vcs = biz.getFeaturizedAttributes()
+    #    vcs = vcs.reshape((1, lenAttributes))
+    #    vectorizedAttributes = np.append(vectorizedAttributes, vcs, axis=0)
+    #featureVector = np.hstack((featureVector, vectorizedAttributes))
 
     #add rating averages for user and restaurant
     avgRatingPairs = np.zeros((0, 4))
@@ -87,11 +88,11 @@ def preprocess(UIPairs, reviewStars, users, bizs):
     featureVector = np.hstack((featureVector, avgRatingPairs))
 
     # add features for vectorized texts
-    for user, biz in UIPairs:
-        vectorizedUIPair = sp.hstack((user.getVectorizedText(), biz.getVectorizedText()), format='csr')
-        vectorizedUIPair = vectorizedUIPair.toarray()
-        vectorizedUITexts = np.append(vectorizedUITexts, vectorizedUIPair, axis=0)
-    featureVector = np.hstack((featureVector, vectorizedUITexts))
+    #for user, biz in UIPairs:
+    #     vectorizedUIPair = sp.hstack((user.getVectorizedText(), biz.getVectorizedText()), format='csr')
+    #     vectorizedUIPair = vectorizedUIPair.toarray()
+    #     vectorizedUITexts = np.append(vectorizedUITexts, vectorizedUIPair, axis=0)
+    #featureVector = np.hstack((featureVector, vectorizedUITexts))
 
     return featureVector, np.array(reviewStars)
 
@@ -111,7 +112,7 @@ def load_train_data(X, Y, train_size=0.8):
 
     return (X_train, X_valid, y_train, y_valid)
 
-def train(X,Y,train_size=0.8,n_estimators=20,model='Random Forest',kernel='linear',degree=3):
+def train(X,Y,train_size=0.8,n_estimators=20,model='Random Forest',kernel='linear',degree=3,n_units=10):
     # define regressor
     #model='Random Forest'
     #model='Linear Regression' 
@@ -132,19 +133,21 @@ def train(X,Y,train_size=0.8,n_estimators=20,model='Random Forest',kernel='linea
             regr = svm.SVR(kernel='linear')
         elif (kernel=='poly'):
             regr = svm.SVR(kernel='poly',degree=degree)
+    elif (model=='NN'):
+        regr = Regressor(layers=[Layer("Rectifier", units=n_units),Layer("Linear")],learning_rate=0.02,n_iter=100)
 
     # Start training
     print(" -- Start training regression. Number of trees = "+str(n_estimators))
     regr.fit(X_train,y_train)
 
     # Start validation
-    y_train_pred=regr.predict(X_train)
-    y_valid_pred=regr.predict(X_valid)
+    y_train_pred=regr.predict(X_train).reshape((y_train.shape[0],))
+    y_valid_pred=regr.predict(X_valid).reshape((y_valid.shape[0],))
     print(" -- Finished training.")
 
     print("  Calculate training and test errors")
-    trainscore = sum((y_train_pred-y_train)**2)/float(len(y_train))
-    testscore = sum((y_valid_pred-y_valid)**2)/float(len(y_valid))
+    trainscore = sqrt(sum((y_train_pred-y_train)**2)/float(y_train.shape[0]))
+    testscore = sqrt(sum((y_valid_pred-y_valid)**2)/float(y_valid.shape[0]))
     return regr, trainscore, testscore
 
 def example():
