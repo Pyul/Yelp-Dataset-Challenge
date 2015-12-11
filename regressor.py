@@ -46,13 +46,16 @@ def preprocessBizs(bizs):
 def preprocessSimilarity(UIPairs):
     similarity = np.zeros(len(UIPairs))
     index = 0
+    bannedCategories = set()
+    bannedCategories.add(u'Restaurants')
+    bannedCategories.add(u'Food')
     for user, biz in UIPairs:
         bizCategories = set(biz.getCategories())
         userCategoryCounts = collections.Counter()
         nCategories = 0
         for userBiz in user.getReviewedBizs():
             for category in userBiz.getCategories():
-                if category is not 'Restaurants' and category is not 'Food':
+                if category not in bannedCategories:
                     userCategoryCounts[category] += 1
                     nCategories += 1
         for cat in userCategoryCounts.keys():
@@ -64,6 +67,7 @@ def preprocessSimilarity(UIPairs):
                 score += userCategoryCounts[bizCategory]
         similarity[index] = 1.0*score/len(bizCategories)
         index += 1
+    return similarity
 
 
 def preprocessUIPairs(UIPairs, users, bizs):
