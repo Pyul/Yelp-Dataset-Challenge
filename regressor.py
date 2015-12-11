@@ -86,10 +86,29 @@ def preprocessCategorySimilarity(UIPairs):
         for bizCategory in bizCategories:
             if bizCategory in userCategories:
                 score += userCategoryCounts[bizCategory]
-        similarity[index] = 1.0*score/len(bizCategories)
+        similarity[index] = score
         index += 1
     return similarity
 
+def preprocessJacard(UIPairs):
+    jacard = np.zeros(len(UIPairs))
+    bannedCategories = set()
+    bannedCategories.add(u'Restaurants')
+    bannedCategories.add(u'Food')
+    i = 0
+    for user, biz in UIPairs:
+        bizCategories = set(biz.getCategories())
+        userCategories = set()
+        for userBiz in user.getReviewedBizs():
+            for category in userBiz.getCategories():
+                userCategories.add(category)
+        bizCategories = bizCategories.difference(bannedCategories)
+        userCategories = userCategories.difference(bannedCategories)
+        intersection = bizCategories.intersection(userCategories)
+        union = bizCategories.union(userCategories)
+        jacard[i] = 1.0*len(intersection)/len(union)
+        i += 1
+    return jacard
 
 def preprocessUIPairs(UIPairs, users, bizs, dictVectCategoriesInput=None, dictVectAttributesInput=None):
     # inArrayForm = []

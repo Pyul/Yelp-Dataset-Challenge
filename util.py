@@ -407,7 +407,8 @@ class Recommender:
         # load traning set
         # first column = y
         # second to end = x
-        Xtrain, dictVectCategories, dictVectAttributes = regressor.preprocessUIPairs(self.UIPairs, self.users, self.bizs, self.dictVectCategories, self.dictVectAttributes)
+        # Xtrain, dictVectCategories, dictVectAttributes = regressor.preprocessUIPairs(self.UIPairs, self.users, self.bizs, self.dictVectCategories, self.dictVectAttributes)
+        XtrainJacard = regressor.preprocessJacard(self.UIPairs)
         if self.dictVectCategories is None:
             self.dictVectAttributes = dictVectAttributes
             self.dictVectCategories = dictVectCategories
@@ -432,15 +433,31 @@ class Recommender:
         print(" - Finished.")
         return regr
 
-    def recommend(self, queryUsers, constraints=None):
+    def applySimilarity(self, user, recs, alpha):
+        result = []
+        for p_ui, biz in recs:
+            sim = cosine_similarity(user.getVectorizedText(), biz.getVectorizedText())
+            p_ui /= 5.0
+            finalScore = alpha*p_ui + (1-alpha)*sim
+            result.append((finalScore, biz))
+        result.sort(reverse=True)
+        return result
+
+
+    def recommend(self, queryUsers, constraints=None, alpha=0.5):
         constraints = {} if constraints is None else constraints
         recommendations = {}
         for user in queryUsers:
             recs = self.topKRecommendationsML(user)
+            recs = self.applySimilarity(user, recs, alpha)
+            if user.id in constraints.keys():
+                assignments = csp.reduceBizs(recs, constraints[user.getId()])
+                if assignments:
+                    #find optimal assignment
+                    optimal = csp.evaluateAssignments(len(assignments[0]), assignments)
+                    recs = optimal.values()
+            recs = [recs[i][1] for i in xrange(len(recs))]
             recommendations[user.getId()] = recs
-            # if user.getId() not in constraints and constraints[user] != None:
-            #     recs = csp.reduceBizs(recs, constraints[user])
-            #     recommendations[user.id] = recs
         return recommendations
 
 

@@ -168,103 +168,25 @@ users = rec.getUsers()
 bizs = rec.getBizs()
 reviews = rec.getReviews()
 queryUser = random.choice(users)
-recommendations = rec.recommend([queryUser])
+
+numRecs = 4
+constraints = {}
+constraints["numRecs"] = numRecs
+constraints["minStars"] = 4
+constraints["maxPrice"] = 2
+
+userConstraints = {}
+userConstraints[queryUser.getId()] = constraints
+recommendations = rec.recommend([queryUser], userConstraints)
 for userId in recommendations.keys():
     recommendedBizs = recommendations[userId]
-    print 'For user {}, we recommend:'.format(userId)
+    print 'For user {}, we recommend (in order of best match to worst match):'.format(userId)
     for biz in recommendedBizs:
         print biz.getName()
 
-# Make a heat plot of restaurant-restaurant similarities
-lenbiz = bizs[0].vectorizedText.shape[1]
-numusers = 40
-allbizsvectorizedText = np.zeros((numusers,lenbiz))
-for i in xrange(numusers):
-    vector = bizs[i].vectorizedText.toarray()
-    allbizsvectorizedText[i,:]=vector
-
-reslabels = []
-for i in range(40):
-    if len(bizs[i].categories)>=2:
-        bizs[i].categories.remove('Restaurants')
-        reslabel = random.sample(bizs[i].categories, 1)[0]
-        reslabel.encode('ascii','ignore')
-    else:
-        reslabel = 'Restaurants'
-    labels.append(reslabel)
-
-similaritymatrix = np.zeros((40,40))
-for i in range(40):
-    for j in range(40):
-        if i==j:
-            similaritymatrix[i,j] = 1
-        else:
-            similaritymatrix[i,j] = cosine_similarity(allbizsvectorizedText[i,:],allbizsvectorizedText[j,:])
-print similaritymatrix
-heatplot.heatplot(similaritymatrix,reslabels,reslabels)
-
-# Make a heat plot of user-user similarities
-len = users[0].vectorizedText.shape[1]
-numusers = 40
-allusersvectorizedText = np.zeros((numusers,len))
-for i in xrange(numusers):
-    vector = users[i].vectorizedText.toarray()
-    allusersvectorizedText[i,:]=vector
-
-userlabels = []
-for i in range(40):
-    userlabels.append('user'+str(i))
-
-similaritymatrix = np.zeros((40,40))
-for i in range(40):
-    for j in range(40):
-        if i==j:
-            similaritymatrix[i,j] = 1
-        else:
-            similaritymatrix[i,j] = cosine_similarity(allusersvectorizedText[i,:],allusersvectorizedText[j,:])
-print similaritymatrix
-heatplot.heatplot(similaritymatrix,userlabels,userlabels)
-
-# Make a heat plot of user-restaurant similarities
-similaritymatrix = np.zeros((40,40))
-for i in range(40):
-    for j in range(40):
-        if i==j:
-            similaritymatrix[i,j] = 1
-        else:
-            similaritymatrix[i,j] = cosine_similarity(allusersvectorizedText[i,:],allusersvectorizedText[j,:])
-print similaritymatrix
-heatplot.heatplot(similaritymatrix,label1,label2)
-
-# Make a PCA plot
-# pca.plotpca(allusersvectorizedText)
-# pca.plotpca(allbizsvectorizedText)
-
-# bizIdToBiz = {}
-# for biz in bizs:
-#     bizIdToBiz[biz['business_id']] = biz
-#
-# queryUser = random.choice(users)
-# userForEval, removedBizs = makeEvalUser(queryUser, vectorizedReviewTexts, reviewIdToIndex, bizIdToBiz, 10)
-# neighborIndexesBySim = nearestNeighbors(userForEval, users, vectorizedReviewTexts, reviewIdToIndex)
-#
-# bizIdToBiz = {}
-# for biz in bizs:
-#     bizIdToBiz[biz['business_id']] = biz
-#
-# queryUser = random.choice(users)
-# userForEval, removedBizs = makeEvalUser(queryUser, vectorizedReviewTexts, reviewIdToIndex, bizIdToBiz, 10)
-# neighborIndexesBySim = nearestNeighbors(userForEval, users, vectorizedReviewTexts, reviewIdToIndex)
-#
-# for neighbor in neighborIndexesBySim:
-#     print neighbor
-#
-# nearestNeighbor = users[neighborIndexesBySim[0][1]]
-#
-# neighborBizs = findUserBizs(nearestNeighbor, bizIdToBiz)
-# divRecommendations = divergentBizs(userForEval, neighborBizs, vectorizedReviewTexts, reviewIdToIndex, 10)
-#
-# evalScore = evaluateRecommendations(userForEval, divRecommendations, removedBizs, bizs, vectorizedReviewTexts, reviewIdToIndex)
-#
-# print evalScore
-#
+recommendations = rec.recommend([queryUser])
+for userId in recommendations.keys():
+    recommendedBizs = recommendations[userId]
+    print 'For user {}, we recommend (in order of best match to worst match):'.format(userId)
+    for biz in recommendedBizs:
+        print biz.getName()
