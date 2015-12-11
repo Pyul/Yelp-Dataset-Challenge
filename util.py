@@ -150,12 +150,20 @@ class User:
     def getVotes(self):
         return self.votes
 
-    def combineVectorizedReviews(self):
+    def combineTfidfVectorizedReviews(self):
         if self.reviews:
             review0 = self.reviews[0]
             self.vectorizedText = csr_matrix(np.zeros(review0.getVectorizedText().shape))
             for review in self.reviews:
-                if review.vectorizedText != None:
+                if review.vectorizedText is not None:
+                    self.vectorizedText = self.vectorizedText + review.getVectorizedText()
+
+    def combineDoc2VecVectorizedReviews(self):
+        if self.reviews:
+            review0 = self.reviews[0]
+            self.vectorizedText = np.zeros(review0.getVectorizedText().shape)
+            for review in self.reviews:
+                if review.vectorizedText is not None:
                     self.vectorizedText = self.vectorizedText + review.getVectorizedText()
 
     def getVectorizedText(self):
@@ -282,12 +290,20 @@ class Biz:
         review.biz = self
         self.reviewerIds.add(review.userId)
 
-    def combineVectorizedReviews(self):
+    def combineTfidfVectorizedReviews(self):
         if self.reviews:
             review0 = self.reviews[0]
             self.vectorizedText = csr_matrix(np.zeros(review0.getVectorizedText().shape))
             for review in self.reviews:
-                if review.vectorizedText != None:
+                if review.vectorizedText is not None:
+                    self.vectorizedText = self.vectorizedText + review.getVectorizedText()
+
+    def combineDoc2VecVectorizedReviews(self):
+        if self.reviews:
+            review0 = self.reviews[0]
+            self.vectorizedText = np.zeros(review0.getVectorizedText().shape)
+            for review in self.reviews:
+                if review.vectorizedText is not None:
                     self.vectorizedText = self.vectorizedText + review.getVectorizedText()
 
     def getVectorizedText(self):
@@ -386,17 +402,18 @@ class Recommender:
         # load traning set
         # first column = y
         # second to end = x
-        Xtrain, Ytrain = regressor.preprocess(self.UIPairs, self.reviewStars, self.users, self.bizs)
-
+        Xtrain = regressor.preprocessUIPairs(self.UIPairs, self.users, self.bizs)
+        YtrainRatings = np.array(self.reviewStars)
+        YtrainSimilarity = regressor.preprocessSimilarity(self.UIPairs)
         # start training
         #regr,score = train(Xtrain,model='SVM')
-        regr,score = regressor.train(Xtrain, Ytrain, model='Random Forest', n_estimators=10)
+        regr,score = regressor.train(Xtrain, YtrainRatings, model='Random Forest', n_estimators=10)
         print("CV Score = "+str(score))
-        regr,score = regressor.train(Xtrain, Ytrain, model='Linear Regression')
+        regr,score = regressor.train(Xtrain, YtrainRatings, model='Linear Regression')
         print("Linear Regression Score = "+str(score))
-        regr,score = regressor.train(Xtrain, Ytrain, model='SVM', kernel='linear')
+        regr,score = regressor.train(Xtrain, YtrainRatings, model='SVM', kernel='linear')
         print("SVM linear = "+str(score))
-        regr,score = regressor.train(Xtrain, Ytrain, model='SVM', kernel='poly')
+        regr,score = regressor.train(Xtrain, YtrainRatings, model='SVM', kernel='poly')
         print("SVM poly = "+str(score))
         # load test set
         # Xtest = np.random.rand(5, 3)

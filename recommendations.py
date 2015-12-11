@@ -1,6 +1,5 @@
 import json, sklearn, pickle, random, copy, collabf, csp, util, math
 import numpy as np
-import pandas as pd
 from collections import Counter
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel, cosine_similarity

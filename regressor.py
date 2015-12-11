@@ -1,4 +1,4 @@
-import sys
+import collections
 
 import numpy as np
 import scipy.sparse as sp
@@ -43,7 +43,30 @@ def preprocessBizs(bizs):
         bizs[i].setFeaturizedAttributes(featurizedAttributes[i])
 
 
-def preprocess(UIPairs, reviewStars, users, bizs):
+def preprocessSimilarity(UIPairs):
+    similarity = np.zeros(len(UIPairs))
+    index = 0
+    for user, biz in UIPairs:
+        bizCategories = set(biz.getCategories())
+        userCategoryCounts = collections.Counter()
+        nCategories = 0
+        for userBiz in user.getReviewedBizs():
+            for category in userBiz.getCategories():
+                if category is not 'Restaurants' and category is not 'Food':
+                    userCategoryCounts[category] += 1
+                    nCategories += 1
+        for cat in userCategoryCounts.keys():
+            userCategoryCounts[cat] = 1.0*userCategoryCounts[cat]/nCategories
+        score = 0
+        userCategories = userCategoryCounts.keys()
+        for bizCategory in bizCategories:
+            if bizCategory in userCategories:
+                score += userCategoryCounts[bizCategory]
+        similarity[index] = 1.0*score/len(bizCategories)
+        index += 1
+
+
+def preprocessUIPairs(UIPairs, users, bizs):
     # inArrayForm = []
     # for vec in UIPairs:
     #     inArrayForm.append(vec.toarray())
@@ -88,12 +111,14 @@ def preprocess(UIPairs, reviewStars, users, bizs):
 
     # add features for vectorized texts
     for user, biz in UIPairs:
-        vectorizedUIPair = sp.hstack((user.getVectorizedText(), biz.getVectorizedText()), format='csr')
-        vectorizedUIPair = vectorizedUIPair.toarray()
+        # vectorizedUIPair = sp.hstack((user.getVectorizedText(), biz.getVectorizedText()), format='csr')
+        vectorizedUIPair = np.hstack((user.getVectorizedText(), biz.getVectorizedText()))
+        vectorizedUIPair = vectorizedUIPair.reshape(1, 600)
+        # vectorizedUIPair = vectorizedUIPair.toarray()
         vectorizedUITexts = np.append(vectorizedUITexts, vectorizedUIPair, axis=0)
     featureVector = np.hstack((featureVector, vectorizedUITexts))
 
-    return featureVector, np.array(reviewStars)
+    return featureVector
 
 
 

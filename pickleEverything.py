@@ -1,11 +1,25 @@
-import pickle, json, collections, operator, re, string
+import sys
+# sys.path.insert(0, '/Library/Python/2.7/site-packages/')
+import pickle,json, collections, operator, re, string
 from util import User, Biz, Review, Recommender
-import numpy as np
+import pandas as pd
+from gensim.models import Doc2Vec
 from nltk.corpus import stopwords
 import scipy.sparse as sp
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 # sys.setrecursionlimit(1500)
+
+remove_punctuation_map = dict((ord(char), None) for char in string.punctuation)
+remove_punctuation_map.pop(ord('\''), None)
+stopwordsEng = stopwords.words('english')
+removeStopWordsMap = dict((stopWord, None) for stopWord in stopwordsEng)
+
+def tokenize(text):
+    text = text.translate(remove_punctuation_map).lower()
+    tokens = re.findall(r"[\w\u0027]+", text)
+    tokens = [word for word in tokens if word not in stopwords.words('english')]
+    return tokens
 
 userRead = open('../yelp_academic_dataset_user.json')
 minUserReviews = 100
@@ -89,6 +103,7 @@ for jsonReview in jsonReviews:
     if jsonReview['user_id'] in userIds and jsonReview['business_id'] in bizIds:
         reviews.append(Review(jsonReview))
 
+
 # # get all the other reviews for the users in our set that are NOT for the restaurants we have
 # userIds = userIdToUser.keys()
 # reviewsRead = open('../yelp_academic_dataset_review.json')
@@ -112,24 +127,27 @@ for i in xrange(len(reviews)):
     reviewIdToIndex[reviews[i].getId()] = i
     reviewCorpus.append(reviews[i].getText())
     reviewStars.append(reviews[i].getStars())
-    reviews[i].setText(None)
+
+# pickle.dump(bizs, open('business_list', 'wb'))
+# pickle.dump(users, open('user_list', 'wb'))
+# pickle.dump(reviews, open('review_list', 'wb'))
 
 # preprocess corpus to remove stopwords
-processedCorpus = []
-remove_punctuation_map = dict((ord(char), None) for char in string.punctuation)
-remove_punctuation_map.pop(ord('\''), None)
-stopwordsEng = stopwords.words('english')
-removeStopWordsMap = dict((stopWord, None) for stopWord in stopwordsEng)
-for doc in reviewCorpus:
-    newDoc = doc.translate(remove_punctuation_map)
-    newDoc = newDoc.lower()
-    tokens = re.findall(r"[\w\u0027]+", newDoc)
-    tokens = [word for word in tokens if word not in stopwords.words('english')]
-    newDoc = ' '.join(tokens)
-    processedCorpus.append(newDoc)
-reviewCorpus = processedCorpus
-
-pickle.dump(reviewCorpus, open('reviewCorpus', 'wb'))
+# processedCorpus = []
+# remove_punctuation_map = dict((ord(char), None) for char in string.punctuation)
+# remove_punctuation_map.pop(ord('\''), None)
+# stopwordsEng = stopwords.words('english')
+# removeStopWordsMap = dict((stopWord, None) for stopWord in stopwordsEng)
+# for doc in reviewCorpus:
+#     newDoc = doc.translate(remove_punctuation_map)
+#     newDoc = newDoc.lower()
+#     tokens = re.findall(r"[\w\u0027]+", newDoc)
+#     tokens = [word for word in tokens if word not in stopwords.words('english')]
+#     newDoc = ' '.join(tokens)
+#     processedCorpus.append(newDoc)
+# reviewCorpus = processedCorpus
+#
+# pickle.dump(reviewCorpus, open('reviewCorpus', 'wb'))
 
 # data = np.mat([np.transpose(reviewIds), np.transpose(reviewCorpus)])
 
@@ -137,9 +155,14 @@ pickle.dump(reviewCorpus, open('reviewCorpus', 'wb'))
 #data[0, :] is the array of all biz id's
 #data[1, :] is the array of all the reviews
 
-vectorizedReviewTexts = TfidfVectorizer().fit_transform(reviewCorpus)
+model = Doc2Vec.load('doc2VecModel')
+# vectorizedReviewTexts = TfidfVectorizer().fit_transform(reviewCorpus)
 for i in xrange(len(reviews)):
-    reviews[i].setVectorizedText(vectorizedReviewTexts[i])
+    text = tokenize(reviews[i].getText())
+    reviews[i].setVectorizedText(model.infer_vector(text))
+    # reviews[i].setVectorizedText(vectorizedReviewTexts[i])
+    reviews[i].setText(None)
+
 
 #make all the reviews for businesses and users accessible to each other
 for review in reviews:
@@ -158,9 +181,11 @@ for review in reviews:
 #         usersWithManyReviews.append(user)
 
 for user in users:
-    user.combineVectorizedReviews()
+    user.combineDoc2VecVectorizedReviews()
+#     # user.combineTfidfVectorizedReviews()
 for biz in bizs:
-    biz.combineVectorizedReviews()
+    biz.combineDoc2VecVectorizedReviews()
+#     # biz.combineTfidfVectorizedReviews()
 
 recommender = Recommender(users, bizs, reviews)
 print len(users)
